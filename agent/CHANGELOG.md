@@ -3,6 +3,11 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.0.1 — 2026-10-08 — schema 1
+- Fix §5: class money in the treasurer's account = Σ fund balances **+** pending reimbursements
+  (was "−"). Only affects `status` answers.
+- **Migration:** none.
+
 ## 1.0.0 — 2026-10-08 — schema 1
 - First version.
 - Tabs: Roster, Funds, Participants, Ledger, Config (see SKILL.md §3).

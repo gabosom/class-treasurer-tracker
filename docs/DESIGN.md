@@ -224,7 +224,7 @@ The agent also removes S07 from `Participants`, or sets her override to 0.
 - **Fund balance**: contribution + income + transfer_in − expense − refund_family − transfer_out.
 - **Owed to parents**: expenses with `paid_by ≠ treasurer`, minus the reimburse_parent rows
   linked to them.
-- **Class money in your account**: Σ fund balances − owed to parents.
+- **Class money in your account**: Σ fund balances **+** owed to parents (their expenses already lowered the funds, but that money hasn't left your account yet). Equivalently: contributions + income − refunds − expenses you paid − reimbursements paid.
   If this is negative, it shows as "Treasurer fronted $X."
 - **Event summary**:
   - total cost

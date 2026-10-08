@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.0.0**
+- **skill_version: 1.0.1**
 - **schema_version: 1**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -283,7 +283,7 @@ Then set `Config.schema_version`. Report each step.
 - **Fund balance**: contribution + income + transfer_in − expense − refund_family − transfer_out.
 - **Pending reimbursements**: `expense` rows with `paid_by` ≠ `treasurer` that have no
   `reimburse_parent` row pointing to them.
-- **Class money in the treasurer's account**: Σ all fund balances − pending reimbursements.
+- **Class money in the treasurer's account**: Σ all fund balances **+** pending reimbursements.
 
 ---
 
