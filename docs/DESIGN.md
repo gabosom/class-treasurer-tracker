@@ -258,7 +258,7 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
     1 kid + 1 adult if nobody is confirmed yet).
   - Per column: revenue = kids × revenue_per_kid + adults × revenue_per_adult (the fund's value, or
     `Config.price_per_*`); venue subtotal = kids × venue_per_kid + adults × venue_per_adult +
-    venue_flat_fee; **drinks/snacks max** = revenue − venue subtotal (zero surplus); surplus/deficit
+    venue_flat_fee; **drinks/snacks** = total_cost − venue subtotal; surplus/deficit
     = revenue − total_cost.
   - Kid/adult counts come from `attendees` ("2 adults, 1 kid" or "1 niño + 1 hermano + 2 adultos";
     siblings count as kids).
@@ -451,7 +451,7 @@ Checks run on every read:
 | D12 | Directiva transactions | Latest 20 on the main page, full filterable history on `/directiva/movimientos` |
 | D13 | Directiva access | Shared `DIRECTIVA_CODE` for now (not every member has Google). Google sign-in later, once emails are gathered |
 | D14 | Funds without a cost | Still shown and counted in totals (their spending is real). The goal or total cost shows as "por definir" (to be determined), with no progress bar, plus a directiva warning |
-| D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card with confirmed vs. max columns. **Open:** the request said a positive surplus "goes to the class fund", which conflicts with D10/rule 11 (event money stays in events). Accounting unchanged until the treasurer confirms |
+| D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card with confirmed vs. max columns. Drinks/snacks = total_cost − venue subtotal (pricing for zero surplus is a current choice, not a rule). Event surpluses stay in events, separate from the class fund (D10 unchanged) |
 
 ## 15. Open questions
 

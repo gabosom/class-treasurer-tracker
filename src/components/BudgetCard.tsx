@@ -69,7 +69,7 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
               { label: T.venueAdults($(b.venuePerAdultCents)), value: (s) => $(s.venueAdultsCents) },
               { label: T.venueFlat, value: (s) => $(s.venueFlatFeeCents) },
               { label: T.venueSubtotal, value: (s) => $(s.venueSubtotalCents), strong: true },
-              { label: T.drinks, value: (s) => $(s.drinksMaxCents), help: T.drinksHelp },
+              { label: T.drinks, value: (s) => (s.drinksCents === null ? "—" : $(s.drinksCents)), help: T.drinksHelp },
             ])}
             {section(T.result, [
               { label: T.totalCost, value: () => (b.totalCostCents === null ? "—" : $(b.totalCostCents)) },

@@ -51,7 +51,8 @@ describe("computeEventBudget", () => {
     expect(b.confirmed).toMatchObject({ families: 22, kids: 36, adults: 46 });
     expect(b.confirmed.revenueCents).toBe(36 * 1100 + 46 * 650); // $695, matches Σ amount_due in the Sheet
     expect(b.confirmed.venueSubtotalCents).toBe(36 * 900 + 46 * 300 + 5000); // $512
-    expect(b.confirmed.drinksMaxCents).toBe(69500 - 51200); // $183
+    expect(b.confirmed.drinksCents).toBe(66000 - 51200); // total_cost − venue subtotal = $148
+    expect(b.max.drinksCents).toBe(66000 - (48 * 900 + 58 * 300 + 5000)); // more people, less left for drinks
     expect(b.confirmed.surplusCents).toBe(69500 - 66000); // +$35
   });
 
@@ -80,7 +81,9 @@ describe("computeEventBudget", () => {
     expect(computeEventBudget({ ...fund, venuePerKidCents: null }, participants, students, defaults)).toBeNull();
   });
 
-  it("surplus is null when total_cost isn't set", () => {
-    expect(computeEventBudget({ ...fund, totalCostCents: null }, participants, students, defaults)!.confirmed.surplusCents).toBeNull();
+  it("surplus and drinks are null when total_cost isn't set", () => {
+    const c = computeEventBudget({ ...fund, totalCostCents: null }, participants, students, defaults)!.confirmed;
+    expect(c.surplusCents).toBeNull();
+    expect(c.drinksCents).toBeNull();
   });
 });
