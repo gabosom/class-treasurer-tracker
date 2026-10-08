@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { FAMILIES_COOKIE, codeMatches, familiesToken, hasFamiliesAccess } from "@/lib/auth";
@@ -13,7 +13,7 @@ export async function setLanguage(lang: string) {
 
 export async function refreshData() {
   if (!(await hasFamiliesAccess())) return;
-  revalidateTag(SHEET_TAG);
+  updateTag(SHEET_TAG); // next read fetches the Sheet again
 }
 
 export async function enterCode(_prev: { error: boolean }, form: FormData): Promise<{ error: boolean }> {
