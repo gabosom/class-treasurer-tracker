@@ -28,21 +28,23 @@ School year: 2026–27.
 ## 2. Architecture
 
 ```
-        Treasurer (by hand)               Claude (cloud session, from chat)
-                │                          │ "writer" token: acts as the treasurer
-                │                          │ (OAuth refresh token, scope: drive)
-                ▼                          ▼
-   ┌───────────────────────────────────────────────────┐
-   │ Google Sheet (owned by the treasurer; private)    │
-   │ Drive folder /Recibos (owned by the treasurer)    │
-   └───────────────────────────────────────────────────┘
-                │  service account, Viewer share + READ-ONLY scope
-                ▼
-   ┌───────────────────────────────────────────────────┐
-   │ Next.js on Vercel (Hobby plan)                    │
-   │ reads raw tabs → checks them → computes totals    │
-   │ on the server                                     │
-   └───────────────────────────────────────────────────┘
+  Treasurer                                   Claude (cloud session)
+  ├─ phone: receipt photo → "Recibos por      ├─ reads the inbox, renames/moves receipts
+  │   procesar" (Drive app, owned by you)     ├─ writes Ledger rows
+  └─ edits the Sheet by hand                  └─ via WRITER service account (Editor share)
+                 │                                         │
+                 ▼                                         ▼
+   ┌───────────────────────────────────────────────────────────┐
+   │ Drive folder "Tesorería Clase 2026-27" (owned by you)     │
+   │   ├─ Sheet (source of truth)                              │
+   │   ├─ Recibos por procesar/   (inbox)                      │
+   │   └─ Recibos/<fund_id>/      (filed receipts)             │
+   └───────────────────────────────────────────────────────────┘
+                 │  READER service account (Viewer share, read-only scopes)
+                 ▼
+   ┌───────────────────────────────────────────────────────────┐
+   │ Next.js on Vercel (Hobby): reads tabs → checks → computes │
+   └───────────────────────────────────────────────────────────┘
           │                               │
     /  Families (class code)      /directiva (Google sign-in, allowed emails)
 ```
@@ -50,47 +52,44 @@ School year: 2026–27.
 **Rules**
 - The Sheet and the receipts are never shared publicly or "published to web."
 - All math happens on the server. The families page never receives a name.
-- The deployed app asks Google only for **read-only** access. Writing happens only from Claude's
-  session and from the treasurer.
+- Vercel only ever holds the **reader** credential. The writer credential lives only in Claude's
+  cloud environment.
 - Money is stored and computed in integer cents.
 
 **Refresh (Vercel Hobby).** No cron job is needed. A page that's more than 5 minutes old rebuilds
-the next time someone opens it; on Hobby this runs on visits, not on a schedule, so the once-a-day
-cron limit doesn't matter. Both views also have a **Refresh now** button that rebuilds immediately.
-Sheets API usage at this scale is far below Google's free limits.
+the next time someone opens it. Both views also have a **Refresh now** button.
 
-**Two Google credentials, one per job.**
-- **Writer (Claude's cloud session and setup scripts):** an OAuth refresh token for the treasurer's
-  own account with the `drive` scope. Files it uploads are owned by the treasurer, so they use the
-  treasurer's storage. The narrower `drive.file` scope can't be used: it only reaches files the
-  OAuth app itself created, and Claude already created the Sheet and folders through the chat's
-  Drive connector (see "Drive layout" below). The tradeoff: if this token leaks, it can read and
-  change the treasurer's whole Drive, not just these files. It's stored only as a secret in the
-  Claude cloud environment and on the local machine.
-- **Reader (the Vercel app):** a service account shared as **Viewer** on the Sheet and folder,
-  requesting read-only scopes. If the deployed app were ever compromised, it couldn't change anything.
+**Credentials: two service accounts, no OAuth tokens.**
+| Account | Shared on the parent folder as | Used by | Can |
+|---|---|---|---|
+| `treasurer-writer` | Editor | Claude's cloud session, setup script | edit the Sheet, rename/move receipts |
+| `treasurer-reader` | Viewer | Vercel app | read the Sheet, read receipts |
 
-Why the writer isn't a service account: a service account has **zero Drive storage**, so uploading a
-receipt fails with `storageQuotaExceeded`, even into a folder you shared with it. Each uploaded file
-would be owned by the service account and count against its storage, not yours. Google's fixes
-(shared drives, domain-wide delegation) need Google Workspace, and this is a personal Gmail account.
-A service account *can* edit a Sheet you share with it, but receipts need the user token anyway, so
-one writer is simpler. The setup script tests this before relying on it (setup prompt, step A7).
+Why this works on personal Gmail:
+- A service account has **zero Drive storage**, so it can never *upload* a file.
+- Renaming, moving and editing files that **you** own uses your storage, not the service account's.
+- So **you** upload, from your phone into the inbox, and the writer only files what's there.
+- Nothing needs an OAuth app, a published app, or Google's review.
 
-The OAuth app must be set to **In production**, not Testing. In Testing, refresh tokens expire
-after 7 days. The `drive` scope is "restricted," but an unverified app used only by its owner still
-works; you click through an "unverified app" warning once.
+**Receipts can't come through chat.** Claude can see an image in the chat but can't reliably turn
+it back into a file to upload. The inbox replaces that.
 
 **Drive layout (already created, owned by gabosom@gmail.com):**
 ```
-Tesorería Clase 2026-27/                 folder 1_ZzQ8Cm2Tl3H8ek9fiF20weMa67uSIzH
-├── Tesorería Clase 2026-27              Sheet 1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs (empty)
-└── Recibos/                             folder 1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp  (= RECEIPTS_FOLDER_ID)
-    ├── CLASS-1/                         folder 1F05YnkQRstbGnmN9fE-eDs3VYJva9pLi
-    └── <fund_id>/                       one subfolder per event, created when the event is
-                                         created; files are named YYYY-MM-DD_vendor_amount.jpg
+Tesorería Clase 2026-27/                 1_ZzQ8Cm2Tl3H8ek9fiF20weMa67uSIzH  (share this folder)
+├── Tesorería Clase 2026-27  (Sheet)     1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs  = SHEET_ID
+├── Recibos por procesar/    (inbox)     1DcDo9cbqv1VT6Sn7FmspEpbaMkIvMt3c             = INBOX_FOLDER_ID
+└── Recibos/                             1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp             = RECEIPTS_FOLDER_ID
+    └── CLASS-1/                         1F05YnkQRstbGnmN9fE-eDs3VYJva9pLi
 ```
-Tabs, headers, dropdowns and formats are applied to the empty Sheet by `scripts/setup-sheet.ts`.
+- Filed receipts are named `YYYY-MM-DD_<fund_id>_<vendor>_<amount>.<ext>`.
+- The fund is in the file name, so receipts stay findable even if they can't be moved
+  into subfolders.
+- **Unverified: can a service account with Editor access move a file it doesn't own between
+  folders in My Drive?** Setup step 6 tests this.
+  - If yes: files move into `Recibos/<fund_id>/`.
+  - If no: they're renamed in place and stay in the inbox folder, which then gets renamed to
+    "Recibos." The dashboard doesn't care either way, since it links by file ID.
 
 ---
 
@@ -259,16 +258,16 @@ Checks run on every read:
 
 | You send | Claude does |
 |---|---|
-| Receipt photo + "sunscreen, class fund, Ana paid" | Reads vendor, date and amount → uploads to `Receipts/<fund_id>/YYYY-MM-DD_vendor_amount.jpg` → adds an `expense` row → replies with the row it wrote |
+| Photo dropped into "Recibos por procesar", plus a chat line like "sunscreen, class fund, Ana paid" | Opens the newest file in the inbox, reads vendor, date and amount → renames/moves it to `Recibos/<fund_id>/YYYY-MM-DD_<fund_id>_vendor_amount.jpg` → adds an `expense` row → replies with the row it wrote. Anything left in the inbox counts as unprocessed. |
 | "Martínez paid $80 Zelle, class fund" | Adds one `contribution` row per child, linked by `payment_ref` |
 | Venmo/Zelle history pasted every couple of weeks | Matches payers using `payment_aliases`, adds rows, lists anything it couldn't match |
 | "Zoo, $380 total, these kids are in" | Creates the fund, sets a fixed price, adds participants |
 | "Close the zoo trip" | Moves the leftover (or covers the gap) to/from `EVENTS-POOL`, sets status to closed |
 | "I paid Ana back" | Adds a `reimbursement` row linked to the expense |
 
-Claude writes with the writer token, which is stored as a secret in the cloud environment and never
-pasted into chat. It doesn't depend on the chat's Google Drive connector, which disconnects
-from time to time. Sheet version history is the audit trail.
+Claude writes with the writer service account key. The key is stored as a secret in the cloud
+environment and never pasted into chat. This doesn't depend on the chat's Google Drive connector,
+which disconnects from time to time. Sheet version history is the audit trail.
 
 ---
 
@@ -280,11 +279,10 @@ from time to time. Sheet version history is the audit trail.
 - `zod` to check rows; `vitest` for the calculations module.
 - Auth.js with Google for directiva. A signed cookie and middleware for the families code.
 - Language: a small `es`/`en` dictionary, no i18n framework.
-- Vercel environment variables (reader): `GOOGLE_SERVICE_ACCOUNT_JSON_B64`, `SHEET_ID`,
+- Vercel environment variables (reader): `GOOGLE_READER_SA_JSON_B64`, `SHEET_ID`,
   `RECEIPTS_FOLDER_ID`, `FAMILIES_CODE`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`.
-- Claude cloud environment variables (writer): `GOOGLE_WRITER_CLIENT_ID`,
-  `GOOGLE_WRITER_CLIENT_SECRET`, `GOOGLE_WRITER_REFRESH_TOKEN`, `SHEET_ID`, `RECEIPTS_FOLDER_ID`.
-  Never set on Vercel.
+- Claude cloud environment variables (writer): `GOOGLE_WRITER_SA_JSON_B64`, `SHEET_ID`,
+  `RECEIPTS_FOLDER_ID`, `INBOX_FOLDER_ID`. Never set on Vercel.
 
 ---
 
@@ -297,21 +295,19 @@ from time to time. Sheet version history is the audit trail.
 3. **Someone breaks the Sheet's structure.** Mitigated by protected header rows, dropdowns, and
    the failure behavior in §7.
 4. **No bank reconciliation.** Accepted (§1). The ledger's own consistency checks are what we have.
-5. **Writer token revoked or expired** (password change, revoking access, the app left in
-   Testing). Claude's writes fail loudly. Fix: re-run the one-time consent step locally and update
-   the secret. A receipt doesn't count as filed until its Drive ID is in the Ledger.
-6. **Writer token leaks.** It has full access to the treasurer's Drive (the `drive` scope). Kept only
-   in the cloud environment's secrets and `~/.config`. Revoke it at myaccount.google.com → Security →
-   Third-party apps. To narrow it to `drive.file`, the setup script would have to recreate the
-   Sheet and folders itself. That's possible later, before real data goes in.
+5. **A receipt uploaded but never logged, or logged but never uploaded.** The directiva view
+   lists files still in the inbox and expenses with no `receipt_file_id`.
+6. **The writer key leaks.** Its access is limited to the one shared folder: no other Drive
+   access, and no Google Cloud permissions. To revoke it, delete the key in the Cloud Console and
+   remove the share.
 
 ---
 
 ## 11. Build phases
 
-0. **Setup.** Done: the Drive folders and an empty Sheet, created by Claude. Remaining (your local
-   Claude Code, `docs/LOCAL_SETUP_PROMPT.md`): GCP project, OAuth app, writer token, service
-   account, template tabs, secrets.
+0. **Setup.** Done: the Drive folders, the inbox, and an empty Sheet, created by Claude.
+   Remaining (your local Claude Code, `docs/LOCAL_SETUP_PROMPT.md`): GCP project, two service
+   accounts, sharing, template tabs, the file-move test, secrets.
 1. You paste the roster. Claude loads the class fund and the existing sunscreen and soccer ball expenses.
 2. Calculations module + tests.
 3. Next.js: reader + checks → directiva → families → receipt proxy → auth → ES/EN.
