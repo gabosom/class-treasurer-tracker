@@ -71,6 +71,16 @@ Why this works on personal Gmail:
 - So **you** upload, from your phone into the inbox, and the writer only files what's there.
 - Nothing needs an OAuth app, a published app, or Google's review.
 
+**Why not an OAuth token for writing (researched 2026-10-08):**
+- Publishing an app **In production** doesn't require review when it's for personal use with
+  fewer than 100 users. Even with restricted scopes like `drive`, users just click through an
+  "unverified app" warning. Testing status is the real trap: refresh tokens expire after 7 days.
+- So OAuth would have worked. But the inbox flow needs to edit files **you** uploaded, which the
+  narrow `drive.file` scope can't reach, so it would need full `drive` access. A service account
+  with access to one folder is narrower, and its credentials never expire.
+- **Fallback if the move test fails and subfolders matter to you:** an OAuth app for your own use,
+  In production, with the `drive` scope.
+
 **Receipts can't come through chat.** Claude can see an image in the chat but can't reliably turn
 it back into a file to upload. The inbox replaces that.
 
@@ -258,12 +268,42 @@ Checks run on every read:
 
 | You send | Claude does |
 |---|---|
-| Photo dropped into "Recibos por procesar", plus a chat line like "sunscreen, class fund, Ana paid" | Opens the newest file in the inbox, reads vendor, date and amount → renames/moves it to `Recibos/<fund_id>/YYYY-MM-DD_<fund_id>_vendor_amount.jpg` → adds an `expense` row → replies with the row it wrote. Anything left in the inbox counts as unprocessed. |
+| Photo dropped into "Recibos por procesar" (see the receipt flow below) | Proposes the expense rows, you confirm, Claude files the receipts and writes the rows |
 | "Martínez paid $80 Zelle, class fund" | Adds one `contribution` row per child, linked by `payment_ref` |
 | Venmo/Zelle history pasted every couple of weeks | Matches payers using `payment_aliases`, adds rows, lists anything it couldn't match |
 | "Zoo, $380 total, these kids are in" | Creates the fund, sets a fixed price, adds participants |
 | "Close the zoo trip" | Moves the leftover (or covers the gap) to/from `EVENTS-POOL`, sets status to closed |
 | "I paid Ana back" | Adds a `reimbursement` row linked to the expense |
+
+### Receipt flow, step by step
+
+1. **Upload, whenever.** In the Drive app on your phone: Share → Drive → "Recibos por procesar".
+   No form and no renaming. If you want, add a note in the file's Drive *description*
+   ("Ana pagó, zoo"). Otherwise leave it blank.
+2. **Process in batches, whenever you like** (weekly is fine). You start a Claude session and say
+   "procesa recibos." Claude:
+   - lists the inbox and downloads each file with the writer account
+   - reads vendor, date, total, and line items from the image
+   - **guesses** the fund from the date, the vendor and which events are open, and guesses who
+     paid from the description, defaulting to `treasurer`
+3. **One confirmation per batch.** Claude shows a table like:
+
+   | # | file | date | vendor | amount | fund | paid_by | public_desc |
+   |---|---|---|---|---|---|---|---|
+   | 1 | IMG_4412.jpg | 2026-10-02 | Costco | 23.47 | CLASS-1 | treasurer | Protector solar |
+   | 2 | IMG_4415.jpg | 2026-10-05 | Target | 18.99 | CLASS-1 | **?** | Balón de fútbol |
+
+   You reply with corrections only ("2: Ana paid"), or "ok."
+4. **Claude writes:** it adds the `expense` rows with `receipt_file_id`, renames each file to
+   `YYYY-MM-DD_<fund_id>_<vendor>_<amount>`, moves it to `Recibos/<fund_id>/` (if the move test
+   passes), and reports what it did.
+5. **Leftovers are visible.** Anything still in the inbox shows on the directiva view as
+   "unprocessed receipts." An unreadable photo stays in the inbox and Claude asks you about it.
+
+Optional later: share **only the inbox** with directiva members as Editor, so they can upload
+receipts for things they paid for. The file's owner then tells Claude who paid, so there's
+nothing to type. Also optional: a scheduled run that processes the inbox daily and only messages
+you when something is ambiguous.
 
 Claude writes with the writer service account key. The key is stored as a secret in the cloud
 environment and never pasted into chat. This doesn't depend on the chat's Google Drive connector,
