@@ -29,14 +29,14 @@ School year: 2026–27.
 
 ```
         Treasurer (by hand)               Claude (cloud session, from chat)
-                │                          │ ledger rows: service account (write scope)
-                │                          │ receipt files: Google Drive connector (as the treasurer)
+                │                          │ "writer" token: acts as the treasurer,
+                │                          │ scope drive.file (only files this app created)
                 ▼                          ▼
    ┌───────────────────────────────────────────────────┐
    │ Google Sheet (owned by the treasurer; private)    │
-   │ Drive folder /Receipts (owned by the treasurer)   │
+   │ Drive folder /Recibos (owned by the treasurer)    │
    └───────────────────────────────────────────────────┘
-                │  same service account, READ-ONLY scope
+                │  service account, Viewer share + READ-ONLY scope
                 ▼
    ┌───────────────────────────────────────────────────┐
    │ Next.js on Vercel (Hobby plan)                    │
@@ -59,10 +59,24 @@ the next time someone opens it; on Hobby this runs on visits, not on a schedule,
 cron limit doesn't matter. Both views also have a **Refresh now** button that rebuilds immediately.
 Sheets API usage at this scale is far below Google's free limits.
 
-**Who owns the files.** The service account *edits* the Sheet but never *owns* a file. A personal
-Gmail account has no shared drives, and service accounts there can't own uploaded files. So the
-treasurer creates the Sheet and the Receipts folder, and Claude uploads receipts through the Drive
-connector, which acts as the treasurer.
+**Two Google credentials, one per job.**
+- **Writer (Claude's cloud session and setup scripts):** an OAuth refresh token for the treasurer's
+  own account, limited to the `drive.file` scope. That scope only reaches files *this app created*:
+  the Sheet and the Recibos folder (the setup script creates both). It can't see anything else in
+  the treasurer's Drive. Files it uploads are owned by the treasurer, so they use the treasurer's
+  storage.
+- **Reader (the Vercel app):** a service account shared as **Viewer** on the Sheet and folder,
+  requesting read-only scopes. If the deployed app were ever compromised, it couldn't change anything.
+
+Why the writer isn't a service account: a service account has **zero Drive storage**, so uploading a
+receipt fails with `storageQuotaExceeded`, even into a folder you shared with it. Each uploaded file
+would be owned by the service account and count against its storage, not yours. Google's fixes
+(shared drives, domain-wide delegation) need Google Workspace, and this is a personal Gmail account.
+A service account *can* edit a Sheet you share with it, but receipts need the user token anyway, so
+one writer is simpler. The setup script tests this before relying on it (setup prompt, step A7).
+
+The OAuth app must be set to **In production**, not Testing. In Testing, refresh tokens expire
+after 7 days. `drive.file` and basic sign-in scopes don't require Google's app review.
 
 ---
 
@@ -231,15 +245,16 @@ Checks run on every read:
 
 | You send | Claude does |
 |---|---|
-| Receipt photo + "sunscreen, class fund, Ana paid" | Reads vendor, date and amount → uploads to `Receipts/<fund_id>/YYYY-MM-DD_vendor_amount.jpg` (Drive connector) → adds an `expense` row → replies with the row it wrote |
+| Receipt photo + "sunscreen, class fund, Ana paid" | Reads vendor, date and amount → uploads to `Receipts/<fund_id>/YYYY-MM-DD_vendor_amount.jpg` → adds an `expense` row → replies with the row it wrote |
 | "Martínez paid $80 Zelle, class fund" | Adds one `contribution` row per child, linked by `payment_ref` |
 | Venmo/Zelle history pasted every couple of weeks | Matches payers using `payment_aliases`, adds rows, lists anything it couldn't match |
 | "Zoo, $380 total, these kids are in" | Creates the fund, sets a fixed price, adds participants |
 | "Close the zoo trip" | Moves the leftover (or covers the gap) to/from `EVENTS-POOL`, sets status to closed |
 | "I paid Ana back" | Adds a `reimbursement` row linked to the expense |
 
-Claude writes to the Sheet with the service account key, which is stored as a secret in the
-cloud environment. The key is never pasted into chat. Sheet version history is the audit trail.
+Claude writes with the writer token, which is stored as a secret in the cloud environment and never
+pasted into chat. It doesn't depend on the chat's Google Drive connector, which disconnects
+from time to time. Sheet version history is the audit trail.
 
 ---
 
@@ -251,8 +266,11 @@ cloud environment. The key is never pasted into chat. Sheet version history is t
 - `zod` to check rows; `vitest` for the calculations module.
 - Auth.js with Google for directiva. A signed cookie and middleware for the families code.
 - Language: a small `es`/`en` dictionary, no i18n framework.
-- Environment variables: `GOOGLE_SERVICE_ACCOUNT_JSON_B64`, `SHEET_ID`, `RECEIPTS_FOLDER_ID`,
-  `FAMILIES_CODE`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`.
+- Vercel environment variables (reader): `GOOGLE_SERVICE_ACCOUNT_JSON_B64`, `SHEET_ID`,
+  `RECEIPTS_FOLDER_ID`, `FAMILIES_CODE`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`.
+- Claude cloud environment variables (writer): `GOOGLE_WRITER_CLIENT_ID`,
+  `GOOGLE_WRITER_CLIENT_SECRET`, `GOOGLE_WRITER_REFRESH_TOKEN`, `SHEET_ID`, `RECEIPTS_FOLDER_ID`.
+  Never set on Vercel.
 
 ---
 
@@ -265,15 +283,18 @@ cloud environment. The key is never pasted into chat. Sheet version history is t
 3. **Someone breaks the Sheet's structure.** Mitigated by protected header rows, dropdowns, and
    the failure behavior in §7.
 4. **No bank reconciliation.** Accepted (§1). The ledger's own consistency checks are what we have.
-5. **The Drive connector in a Claude session can disconnect.** If it does, receipts wait in chat
-   and get uploaded later. A receipt doesn't count as filed until its Drive ID is in the Ledger.
+5. **Writer token revoked or expired** (password change, revoking access, the app left in
+   Testing). Claude's writes fail loudly. Fix: re-run the one-time consent step locally and update
+   the secret. A receipt doesn't count as filed until its Drive ID is in the Ledger.
+6. **Writer token leaks.** Damage is limited to the Sheet and the Recibos folder, because of
+   `drive.file`. Revoke it at myaccount.google.com → Security → Third-party access.
 
 ---
 
 ## 11. Build phases
 
-0. **Setup (your local Claude Code, `docs/LOCAL_SETUP_PROMPT.md`)**: GCP project, service
-   account, Sheet + Receipts folder, template tabs, secrets.
+0. **Setup (your local Claude Code, `docs/LOCAL_SETUP_PROMPT.md`)**: GCP project, OAuth app,
+   writer token, service account, Sheet + Recibos folder, template tabs, secrets.
 1. You paste the roster. Claude loads the class fund and the existing sunscreen and soccer ball expenses.
 2. Calculations module + tests.
 3. Next.js: reader + checks → directiva → families → receipt proxy → auth → ES/EN.
@@ -282,10 +303,11 @@ cloud environment. The key is never pasted into chat. Sheet version history is t
 
 ---
 
-## 12. Remaining questions
+## 12. Decisions log
 
-| # | Question | Default if you don't answer |
+| # | Question | Decision |
 |---|---|---|
-| Q1 | Class fund: per **student** (2 kids = 2×) or per **family**? You've said both at different points. | Per student |
-| Q2 | Can `EVENTS-POOL` money go back to families (e.g. at year end), or does it only fund events? | Only funds events; year-end decision is yours |
-| Q3 | Opening balance or carryover from last year? | None; can be added as an `income` row |
+| Q1 | Class fund per student or per family? | Per student (no siblings share a class this year) |
+| Q2 | Can `EVENTS-POOL` money go back to families? | No; it's spent on events |
+| Q3 | Carryover from last year? | None |
+| Q4 | Families view: headcounts? | Class fund: yes. Events: dollar amounts only |
