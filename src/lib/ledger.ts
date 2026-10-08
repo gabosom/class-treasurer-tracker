@@ -22,8 +22,6 @@ export interface FundSummary {
   incomeCents: number;
   expensesCents: number;
   refundsCents: number;
-  transfersInCents: number;
-  transfersOutCents: number;
   /** contributions − refunds */
   collectedCents: number;
   balanceCents: number;
@@ -71,8 +69,6 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
     const refundsCents = sum("refund_family");
     const incomeCents = sum("income");
     const expensesCents = sum("expense");
-    const transfersInCents = sum("transfer_in");
-    const transfersOutCents = sum("transfer_out");
 
     // Who owes: class fund → every active student (Participants rows only override);
     // event → students listed in Participants.
@@ -109,9 +105,7 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
         issues.push(issue(`${fund.id}: ${l.student.id} paid more than they owe.`, "warning"));
 
     const balanceCents =
-      contributionsCents + incomeCents + transfersInCents - expensesCents - refundsCents - transfersOutCents;
-    if (fund.status === "closed" && fund.type === "event" && balanceCents !== 0)
-      issues.push(issue(`${fund.id} is closed but its balance isn't zero; leftovers should move to EVENTS-POOL.`, "warning"));
+      contributionsCents + incomeCents - expensesCents - refundsCents;
 
     const paying = lines.filter((l) => l.status !== "waived");
     return {
@@ -121,8 +115,6 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
       incomeCents,
       expensesCents,
       refundsCents,
-      transfersInCents,
-      transfersOutCents,
       collectedCents: contributionsCents - refundsCents,
       balanceCents,
       expectedCents: lines.reduce((a, l) => a + (l.dueCents ?? 0), 0),

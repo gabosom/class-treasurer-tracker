@@ -1,6 +1,6 @@
 // Sheet schema. Must match agent/class-treasurer/SKILL.md §3 for the same schema_version.
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const TABS = {
   Roster: [
@@ -42,7 +42,7 @@ export const TAB_NAMES = Object.keys(TABS) as TabName[];
 export type Cell = string | number | boolean | null | undefined;
 export type RawWorkbook = Partial<Record<TabName, Cell[][]>>;
 
-export const FUND_TYPES = ["class", "event", "events_pool"] as const;
+export const FUND_TYPES = ["class", "event"] as const;
 export const FUND_STATUSES = ["collecting", "closed"] as const;
 export const TXN_TYPES = [
   "contribution",
@@ -50,8 +50,6 @@ export const TXN_TYPES = [
   "expense",
   "reimburse_parent",
   "refund_family",
-  "transfer_out",
-  "transfer_in",
 ] as const;
 export const METHODS = ["venmo", "zelle", "cash", "card", "other"] as const;
 

@@ -1,9 +1,10 @@
-import { hasFamiliesAccess } from "@/lib/auth";
+import { directivaAccess } from "@/lib/auth";
 import { getSnapshot, isDemo } from "@/lib/data";
 import { fetchReceipt } from "@/lib/google";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ fileId: string }> }) {
-  if (!(await hasFamiliesAccess())) return new Response("Unauthorized", { status: 401 });
+  // Receipts can show bank details, so only directiva members can open them.
+  if ((await directivaAccess()).state !== "allowed") return new Response("Unauthorized", { status: 401 });
   const { fileId } = await params;
 
   // Only serve files the Ledger references, so this can't be used to read anything else

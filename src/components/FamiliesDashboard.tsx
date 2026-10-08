@@ -3,24 +3,23 @@ import { type Dict, type Lang, formatDate } from "@/lib/i18n";
 import type { FamiliesView } from "@/lib/views";
 import { Card, Meter, SectionTitle, Stat } from "./ui";
 
+/** The two headline boxes, shared by the families and directiva views. */
+export function PotTiles({ v, t, lang }: { v: FamiliesView; t: Dict; lang: Lang }) {
+  const $ = (c: number) => formatMoney(c, lang);
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Stat label={t.classPot} value={$(v.pots.class)} help={t.classPotHelp} />
+      <Stat label={t.eventsPot} value={$(v.pots.events)} help={t.eventsPotHelp} />
+    </div>
+  );
+}
+
 export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; lang: Lang }) {
   const $ = (c: number) => formatMoney(c, lang);
-  const total = v.pots.class + v.pots.events;
 
   return (
     <div className="space-y-6">
-      {/* Hero: the one number this view leads with */}
-      <Card>
-        <div className="text-sm text-ink-2">{t.available}</div>
-        <div className="mt-1 text-5xl font-semibold tracking-tight text-ink">{$(total)}</div>
-        <div className="mt-1 text-sm text-ink-3">{t.availableHelp}</div>
-      </Card>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label={t.classPot} value={$(v.pots.class)} />
-        <Stat label={t.eventsPot} value={$(v.pots.events)} help={t.eventsPotHelp} />
-        <Stat label={t.pendingReimb} value={$(v.pendingReimbursementsCents)} help={t.pendingReimbHelp} />
-      </div>
+      <PotTiles v={v} t={t} lang={lang} />
 
       {v.classFunds.map((f) => (
         <Card key={f.id}>
@@ -41,14 +40,8 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
           )}
           {f.payingCount > 0 && <p className="mt-2 text-sm text-ink-2">{t.studentsPaid(f.paidCount, f.payingCount)}</p>}
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <dt className="text-ink-2">{t.spent}</dt>
-              <dd className="num font-medium text-ink">{$(f.spentCents)}</dd>
-            </div>
-            <div>
-              <dt className="text-ink-2">{t.balance}</dt>
-              <dd className="num font-medium text-ink">{$(f.balanceCents)}</dd>
-            </div>
+            <Row label={t.spent} value={$(f.spentCents)} />
+            <Row label={t.balance} value={$(f.balanceCents)} />
           </dl>
           {f.notes && <p className="mt-3 text-sm text-ink-3">{f.notes}</p>}
         </Card>
@@ -80,18 +73,18 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
                     />
                   </div>
                 )}
+                {e.payingCount > 0 && (
+                  <p className="mt-2 text-sm text-ink-2">{t.familiesPaid(e.paidCount, e.payingCount)}</p>
+                )}
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <Row label={t.totalCost} value={e.totalCostCents === null ? "—" : $(e.totalCostCents)} />
                   <Row label={t.collected} value={$(e.collectedCents)} />
                   <Row label={t.spent} value={$(e.spentCents)} />
-                  <Row label={e.balanceCents < 0 ? t.shortfall : t.balance} value={$(e.balanceCents)} />
+                  <Row
+                    label={e.status === "closed" ? (e.balanceCents < 0 ? t.shortfall : t.leftover) : t.balance}
+                    value={$(e.balanceCents)}
+                  />
                 </dl>
-                {e.movedToPoolCents !== 0 && (
-                  <p className="mt-2 text-sm text-ink-2">
-                    {e.movedToPoolCents > 0 ? t.movedToPool : t.coveredByPool}:{" "}
-                    <span className="num font-medium text-ink">{$(Math.abs(e.movedToPoolCents))}</span>
-                  </p>
-                )}
                 {e.notes && (
                   <p className="mt-3 text-sm text-ink-3">
                     <span className="text-ink-2">{t.howCalculated}: </span>
@@ -102,9 +95,12 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
             ))}
           </div>
         )}
-        <p className="mt-3 text-sm text-ink-2">
-          {t.poolLine}: <span className="num font-medium text-ink">{$(v.eventsPoolCents)}</span> · {t.poolLineHelp}
-        </p>
+        {v.events.some((e) => e.status === "closed") && (
+          <p className="mt-3 text-sm text-ink-2">
+            {t.poolLine}: <span className="num font-medium text-ink">{$(v.closedEventsSurplusCents)}</span> ·{" "}
+            {t.poolLineHelp}
+          </p>
+        )}
       </section>
 
       <Card>
@@ -112,9 +108,7 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
         {v.expenses.length === 0 ? (
           <p className="text-sm text-ink-3">{t.noExpenses}</p>
         ) : (
-          <>
-          {/* Phones: stacked rows so the amount is always visible */}
-          <ul className="divide-y divide-line sm:hidden">
+          <ul className="divide-y divide-line">
             {v.expenses.map((x) => (
               <li key={x.id} className="flex items-start justify-between gap-3 py-2.5 text-sm">
                 <div className="min-w-0">
@@ -123,62 +117,10 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
                     {formatDate(x.date, lang)} · {x.fundName}
                   </div>
                 </div>
-                <div className="shrink-0 text-right">
-                  <div className="num text-ink">{$(x.amountCents)}</div>
-                  {x.receiptFileId ? (
-                    <a
-                      href={`/api/receipt/${encodeURIComponent(x.receiptFileId)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-accent underline underline-offset-2"
-                    >
-                      {t.receipt}
-                    </a>
-                  ) : (
-                    <span className="text-xs text-ink-3">{t.noReceipt}</span>
-                  )}
-                </div>
+                <div className="num shrink-0 text-ink">{$(x.amountCents)}</div>
               </li>
             ))}
           </ul>
-          <div className="hidden sm:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-ink-2">
-                  <th className="px-4 py-2 font-medium sm:px-2">{t.date}</th>
-                  <th className="px-2 py-2 font-medium">{t.description}</th>
-                  <th className="px-2 py-2 font-medium">{t.fund}</th>
-                  <th className="px-2 py-2 text-right font-medium">{t.amount}</th>
-                  <th className="px-4 py-2 font-medium sm:px-2">{t.receipt}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {v.expenses.map((x) => (
-                  <tr key={x.id} className="border-b border-line last:border-0">
-                    <td className="whitespace-nowrap px-4 py-2 text-ink-2 sm:px-2">{formatDate(x.date, lang)}</td>
-                    <td className="px-2 py-2 text-ink">{x.description || "—"}</td>
-                    <td className="px-2 py-2 text-ink-2">{x.fundName}</td>
-                    <td className="num whitespace-nowrap px-2 py-2 text-right text-ink">{$(x.amountCents)}</td>
-                    <td className="px-4 py-2 sm:px-2">
-                      {x.receiptFileId ? (
-                        <a
-                          href={`/api/receipt/${encodeURIComponent(x.receiptFileId)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-accent underline underline-offset-2"
-                        >
-                          {t.viewReceipt}
-                        </a>
-                      ) : (
-                        <span className="text-ink-3">{t.noReceipt}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          </>
         )}
       </Card>
     </div>

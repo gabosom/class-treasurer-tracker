@@ -57,15 +57,11 @@ ledger.push(txn("2026-10-02", "CLASS-1", "expense", 31.2, "", "Supermaxi", "Elen
 const snacks = `T${String(n).padStart(4, "0")}`;
 ledger.push(txn("2026-10-04", "CLASS-1", "reimburse_parent", 31.2, "", "Elena Vega", "", "zelle", "", "", "", "", snacks));
 
-// Closed outing: pumpkin patch, leftover moved to the events pool.
+// Closed outing: pumpkin patch; its $12 leftover stays as its balance.
 const pumpkin = ["S01", "S02", "S03", "S05", "S07", "S09", "S11", "S13"];
 for (const s of pumpkin)
   ledger.push(txn("2026-09-15", "EV-2026-09-HUERTO", "contribution", 15, s, "", "", "venmo", "", "", "", "", ""));
 ledger.push(txn("2026-09-27", "EV-2026-09-HUERTO", "expense", 108, "", "Granja El Paraíso", "treasurer", "card", "", "demo-huerto", "Entradas huerto", "", ""));
-const outId = `T${String(n + 1).padStart(4, "0")}`;
-const inId = `T${String(n + 2).padStart(4, "0")}`;
-ledger.push(txn("2026-09-28", "EV-2026-09-HUERTO", "transfer_out", 12, "", "", "", "other", "", "", "", `pair ${inId}`, ""));
-ledger.push(txn("2026-09-28", "EVENTS-POOL", "transfer_in", 12, "", "", "", "other", "", "", "", `pair ${outId}`, ""));
 
 // Open outing with per-family amounts: kid $20, sibling $20, adult $15.
 const flip: [string, number, string][] = [
@@ -98,7 +94,6 @@ export const demoWorkbook: RawWorkbook = {
   Funds: [
     [...TABS.Funds],
     ["CLASS-1", "Fondo de clase 2026-27", "class", 40, "", "", "collecting", "Protector solar, balones, materiales y refrigerios compartidos durante el año."],
-    ["EVENTS-POOL", "Fondo de eventos", "events_pool", "", "", "", "collecting", "Sobrantes de eventos; solo se usan para otros eventos."],
     ["EV-2026-09-HUERTO", "Huerto de calabazas", "event", "", 120, "2026-09-27", "closed", "Entrada $13.50 por niño + 10%. 8 niños."],
     ["EV-2026-10-FLIP-ZONE", "Paseo 1 - Flip Zone", "event", "", flipTotal, "2026-10-18", "collecting", `Niño o hermano $20, adulto $15 (entrada + medias antideslizantes, incl. 10%). Total $${flipTotal}.`],
   ],
@@ -111,7 +106,7 @@ export const demoWorkbook: RawWorkbook = {
   Ledger: [[...TABS.Ledger], ...ledger],
   Config: [
     [...TABS.Config],
-    ["schema_version", "2"],
+    ["schema_version", "3"],
     ["school_year", "2026-27"],
     ["directiva_email", "demo@example.com"],
   ],

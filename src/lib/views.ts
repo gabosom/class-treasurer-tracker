@@ -6,7 +6,8 @@ import type { Issue, Pot, Txn, Workbook } from "./schema";
 
 export interface FamiliesView {
   pots: Record<Pot, number>;
-  pendingReimbursementsCents: number;
+  /** Σ balances of closed events: leftovers available for future events (negative = shortfall) */
+  closedEventsSurplusCents: number;
   classFunds: {
     id: string;
     name: string;
@@ -28,25 +29,27 @@ export interface FamiliesView {
     collectedCents: number;
     spentCents: number;
     balanceCents: number;
-    /** > 0: leftover moved to EVENTS-POOL; < 0: shortfall covered from it */
-    movedToPoolCents: number;
+    paidCount: number;
+    payingCount: number;
   }[];
-  eventsPoolCents: number;
+  // No receipt links here: receipts can show bank details, so only directiva sees them.
   expenses: {
     id: string;
     date: string;
     fundName: string;
     description: string;
     amountCents: number;
-    receiptFileId: string;
   }[];
 }
 
 export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
   const fundName = new Map(wb.funds.map((f) => [f.id, f.name]));
+  const events = l.funds.filter((f) => f.fund.type === "event");
   return {
     pots: l.pots,
-    pendingReimbursementsCents: l.pendingTotalCents,
+    closedEventsSurplusCents: events
+      .filter((f) => f.fund.status === "closed")
+      .reduce((a, f) => a + f.balanceCents, 0),
     classFunds: l.funds
       .filter((f) => f.fund.type === "class")
       .map((f) => ({
@@ -60,8 +63,7 @@ export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
         paidCount: f.paidCount,
         payingCount: f.payingCount,
       })),
-    events: l.funds
-      .filter((f) => f.fund.type === "event")
+    events: [...events]
       .sort((a, b) => (b.fund.date ?? "").localeCompare(a.fund.date ?? ""))
       .map((f) => ({
         id: f.fund.id,
@@ -73,11 +75,9 @@ export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
         collectedCents: f.collectedCents + f.incomeCents,
         spentCents: f.expensesCents,
         balanceCents: f.balanceCents,
-        movedToPoolCents: f.transfersOutCents - f.transfersInCents,
+        paidCount: f.paidCount,
+        payingCount: f.payingCount,
       })),
-    eventsPoolCents: l.funds
-      .filter((f) => f.fund.type === "events_pool")
-      .reduce((a, f) => a + f.balanceCents, 0),
     expenses: wb.txns
       .filter((t) => t.type === "expense")
       .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
@@ -87,7 +87,6 @@ export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
         fundName: fundName.get(t.fundId) ?? t.fundId,
         description: t.publicDesc,
         amountCents: t.amountCents,
-        receiptFileId: t.receiptFileId,
       })),
   };
 }
@@ -95,6 +94,7 @@ export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
 export interface DirectivaView {
   families: FamiliesView;
   treasurerCashCents: number;
+  pendingTotalCents: number;
   pending: PendingParent[];
   funds: {
     id: string;
@@ -126,6 +126,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
   return {
     families: buildFamiliesView(wb, l),
     treasurerCashCents: l.treasurerCashCents,
+    pendingTotalCents: l.pendingTotalCents,
     pending: l.pending,
     funds: l.funds.map((f) => ({
       id: f.fund.id,

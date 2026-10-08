@@ -2,7 +2,7 @@ import { type RawWorkbook, TABS } from "@/lib/schema";
 
 // Small fictional workbook for unit tests (demo mode uses fixtures/demo.ts).
 // Covers: class fund, a paid-by-another-parent expense with partial payback,
-// an event with a refund, a closed event with its leftover moved to EVENTS-POOL.
+// an event with a refund, a closed event that keeps its leftover.
 
 export const sampleWorkbook: RawWorkbook = {
   Roster: [
@@ -16,7 +16,6 @@ export const sampleWorkbook: RawWorkbook = {
   Funds: [
     [...TABS.Funds],
     ["CLASS-1", "Fondo de clase 2026-27", "class", 40, "", "", "collecting", "Útiles y materiales compartidos para todo el año."],
-    ["EVENTS-POOL", "Fondo de eventos", "events_pool", "", "", "", "collecting", "Sobrantes de eventos; solo se usan para otros eventos."],
     ["EV-2026-10-PUMPKIN", "Huerto de calabazas", "event", "", 40, "2026-10-20", "closed", "Entradas 3×$12 = $36 + 10% ≈ $40."],
     ["EV-2026-11-ZOO", "Zoológico", "event", "", 90, "2026-11-14", "collecting", "Niño o adulto $15 c/u (bus + entrada, incl. 10%). Total $90."],
   ],
@@ -43,8 +42,6 @@ export const sampleWorkbook: RawWorkbook = {
     ["T0009", "2026-10-10", "EV-2026-10-PUMPKIN", "contribution", 15, "S02", "", "", "venmo", "", "", "", "", ""],
     ["T0010", "2026-10-11", "EV-2026-10-PUMPKIN", "contribution", 15, "S03", "", "", "cash", "", "", "", "", ""],
     ["T0011", "2026-10-20", "EV-2026-10-PUMPKIN", "expense", 36, "", "Granja Feliz", "treasurer", "card", "", "file-pumpkin", "Entradas huerto", "", ""],
-    ["T0012", "2026-10-21", "EV-2026-10-PUMPKIN", "transfer_out", 9, "", "", "", "other", "", "", "", "pair T0013", ""],
-    ["T0013", "2026-10-21", "EVENTS-POOL", "transfer_in", 9, "", "", "", "other", "", "", "", "pair T0012", ""],
     ["T0014", "2026-10-25", "EV-2026-11-ZOO", "contribution", 30, "S01", "", "", "venmo", "", "", "", "", ""],
     ["T0015", "2026-10-25", "EV-2026-11-ZOO", "contribution", 30, "S02", "", "", "venmo", "", "", "", "", ""],
     ["T0016", "2026-10-26", "EV-2026-11-ZOO", "contribution", 25, "S03", "", "", "venmo", "", "", "", "", ""],
@@ -52,7 +49,7 @@ export const sampleWorkbook: RawWorkbook = {
   ],
   Config: [
     [...TABS.Config],
-    ["schema_version", "2"],
+    ["schema_version", "3"],
     ["school_year", "2026-27"],
     ["directiva_email", "gabosom@gmail.com"],
     ["receipts_folder_id", "1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp"],

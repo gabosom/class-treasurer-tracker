@@ -18,7 +18,6 @@ import {
   TAB_NAMES,
   TREASURER,
   TXN_TYPES,
-  potOf,
 } from "./schema";
 
 const str = (c: Cell) => (c === null || c === undefined ? "" : String(c).trim());
@@ -167,8 +166,6 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     const studentId = str(r[1]);
     const amountDue = toCents(r[2]);
     if (!fundById.has(fundId)) return err("Participants", row, `Unknown fund_id "${fundId}".`);
-    if (fundById.get(fundId)!.type === "events_pool")
-      return err("Participants", row, `EVENTS-POOL can't have participants.`);
     if (!studentIds.has(studentId)) return err("Participants", row, `Unknown student_id "${studentId}".`);
     if (Number.isNaN(amountDue) || (amountDue !== null && amountDue < 0))
       return err("Participants", row, `Invalid amount_due.`);
@@ -228,8 +225,6 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     }
     if (type === "reimburse_parent" && !t.reimbursesTxn)
       return err("Ledger", row, `${id}: reimburse_parent needs reimburses_txn.`);
-    if (type === "contribution" && fundById.get(fundId)!.type === "events_pool")
-      return err("Ledger", row, `${id}: families don't contribute to EVENTS-POOL directly.`);
     txns.push(t);
   });
 
@@ -261,35 +256,6 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     reimbursedSoFar.set(exp.id, total);
     return true;
   });
-
-  // Ledger: transfers come in pairs ("pair T00xx" in private_notes), same amount, same pot
-  const pairOf = (t: Txn) => /pair\s+(T\d+)/i.exec(t.privateNotes)?.[1]?.toUpperCase() ?? "";
-  const transfers = new Map(
-    txns.filter((t) => t.type === "transfer_out" || t.type === "transfer_in").map((t) => [t.id, t]),
-  );
-  const badTransfers = new Set<string>();
-  for (const t of transfers.values()) {
-    const other = transfers.get(pairOf(t));
-    const fail = (m: string) => {
-      err("Ledger", t.row, `${t.id}: ${m} Transfer not counted.`);
-      badTransfers.add(t.id);
-    };
-    if (!other) {
-      fail(`has no matching transfer (private_notes must say "pair T00xx").`);
-      continue;
-    }
-    if (pairOf(other) !== t.id) fail(`its pair ${other.id} doesn't point back to it.`);
-    else if (other.type === t.type) fail(`pair ${other.id} has the same direction.`);
-    else if (other.amountCents !== t.amountCents) fail(`amount differs from pair ${other.id}.`);
-    else if (potOf(fundById.get(other.fundId)!.type) !== potOf(fundById.get(t.fundId)!.type))
-      fail(`moves money between the class and events pots, which isn't allowed.`);
-  }
-  // If one side is bad, drop both so totals stay balanced.
-  for (const id of [...badTransfers]) {
-    const p = transfers.get(pairOf(transfers.get(id)!));
-    if (p) badTransfers.add(p.id);
-  }
-  txns = txns.filter((t) => !badTransfers.has(t.id));
 
   return { students, funds, participants, txns, directivaEmails, issues };
 }

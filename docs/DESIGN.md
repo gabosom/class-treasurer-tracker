@@ -120,9 +120,9 @@ other tabs (formulas, reports); the app ignores them. Columns are listed in thei
 ### `Funds`
 | # | column | example | notes |
 |---|---|---|---|
-| 1 | fund_id | `CLASS-1`, `EV-2026-11-ZOO`, `EVENTS-POOL` | |
+| 1 | fund_id | `CLASS-1`, `EV-2026-11-ZOO` | |
 | 2 | name | `Fondo de clase 2026-27` | shown on both views |
-| 3 | type | `class` \| `event` \| `events_pool` | |
+| 3 | type | `class` \| `event` | |
 | 4 | price_per_student | `25.00` | **class fund only**: what each student owes. Blank for events |
 | 5 | total_cost | `380.00` | events: the total, buffer included |
 | 6 | date | `2026-11-14` | event date |
@@ -137,7 +137,6 @@ other tabs (formulas, reports); the app ignores them. Columns are listed in thei
   family's `amount_due` in `Participants` and shows you the table before writing.
   **Amounts stay fixed once set.** A family joining later uses the same per-person prices, and
   nobody else's amount changes unless you ask.
-- **`EVENTS-POOL`**: holds event leftovers (§6).
 
 ### `Participants` — who owes what for each event (schema v2)
 | # | column | example | notes |
@@ -177,7 +176,6 @@ never as paid or waived. The class fund needs no rows here except exceptions.
 | `expense` | Something bought for the class or an event | **−** | **−** if you paid; **unchanged** if another parent paid, who is now owed |
 | `reimburse_parent` | You pay back **a parent who bought something** for the class | **unchanged** (the expense already counted) | **−** |
 | `refund_family` | You give a family **its contribution back** (e.g. they dropped out of an outing) | **−** | **−** |
-| `transfer_out` / `transfer_in` | Move leftovers between funds (always a pair) | −/+ | unchanged |
 
 **Why reimbursement and refund are different:** a refund *undoes a contribution*, so the fund
 really has less money. A reimbursement *settles a debt from an expense that's already counted*.
@@ -216,7 +214,7 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 ### `Config` — key/value
 | key | example | notes |
 |---|---|---|
-| schema_version | `2` | must match the skill's schema version (§9) |
+| schema_version | `3` | must match the skill's schema version (§9) |
 | school_year | `2026-27` | |
 | directiva_email | `gabosom@gmail.com` | one row per member; controls who can open `/directiva` |
 | receipts_folder_id | `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp` | |
@@ -231,7 +229,7 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
     a different amount.
 - **Paid (student, fund)**: contributions − refund_family for that student and fund.
 - **Status**: `paid` (paid ≥ due), `partial`, `unpaid`, `waived` (due = 0), `unset` (event amount not set yet).
-- **Fund balance**: contribution + income + transfer_in − expense − refund_family − transfer_out.
+- **Fund balance**: contribution + income − expense − refund_family.
 - **Owed to parents**: expenses with `paid_by ≠ treasurer`, minus the reimburse_parent rows
   linked to them.
 - **Class money in your account**: Σ fund balances **+** owed to parents (their expenses already lowered the funds, but that money hasn't left your account yet). Equivalently: contributions + income − refunds − expenses you paid − reimbursements paid.
@@ -242,7 +240,8 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
   - collected
   - spent
   - leftover (collected − spent)
-- **Pot totals**: Class = Σ class funds. Events = Σ event funds + `EVENTS-POOL`.
+- **Pot totals**: Class = Σ class funds. Events = Σ all event balances, open and closed, computed
+  live. A closed event's leftover simply stays as its balance.
 
 ---
 
@@ -251,13 +250,13 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 | Pot | Fed by | Can pay for |
 |---|---|---|
 | **Class** (`CLASS-*`) | class fund contributions | class things only; leftovers stay in the class |
-| **Events** (`EV-*` + `EVENTS-POOL`) | event contributions | events only |
+| **Events** (all `EV-*`) | event contributions | events only |
 
-- **Closing an event**: its leftover moves into `EVENTS-POOL` as a transfer pair. A shortfall is
-  covered from `EVENTS-POOL` if there's enough.
-- `EVENTS-POOL` can help fund future events. It is never given back to families.
-- **Money never moves between the class and events pots.** The app flags any transfer that tries
-  as a data error.
+- **No pool fund and no transfers** (schema v3). Each event keeps its own leftover or shortfall as
+  its balance. The events total is the sum of all event balances, computed live every time.
+- A short event shows a negative balance. The other events' surplus covers it within the events total.
+- Event money is never given back to families and never pays for class things. Every expense
+  belongs to exactly one fund.
 - No buffer is tracked. You build it into `total_cost`.
 
 ---
@@ -268,28 +267,32 @@ A header dropdown switches **ES / EN** (default ES), saved in a cookie. Interfac
 translated; text from the Sheet is shown as typed.
 
 ### Families (`/`, shared class code)
-- Two pot cards (Class, Events) with balances.
-- Class fund: raised vs. goal progress bar, "20 of 24 students," spent, remaining.
-- Each event: total cost, collected, spent, leftover. **Dollar amounts only, no headcounts.**
-- Each fund's `notes` (the cost breakdown).
-- Expense list: date, `public_desc`, fund, amount, receipt link.
-- **"Pending reimbursements: $X"** as a single total, so the drop in the balance is explained.
-  No names.
-- Never shown: names, per-student status, `private_notes`, `paid_by`, who is owed.
+- Two boxes: **Class fund** and **Events** balances. No combined total, and no pending
+  reimbursements (those are already subtracted; who's owed is directiva business).
+- Class fund: raised vs. goal progress bar, "15 of 19 students have paid," spent, balance.
+- Each event: progress bar, **"X of Y families have paid"** (changed from D4), total cost,
+  collected, spent, balance (or leftover/shortfall once closed), and `notes`.
+- "Leftovers from closed events: $X", the sum of closed events' balances.
+- Expense list: date, `public_desc`, fund, amount. **No receipt links**, since receipts can show
+  bank details.
+- Never shown: names, per-student status, `private_notes`, `paid_by`, who is owed, receipts.
 
 ### Directiva (`/directiva`, Google sign-in, emails from `Config`)
-- For each fund, a table by child: due / paid / status, plus parent contacts. Filters: unpaid, partial.
-- Fund details including `notes`.
-- **Pending reimbursements**, its own section near the top: one line per parent owed money, with
-  the total owed, each expense (date, description, amount, receipt), and how many days it's been
-  waiting. Paid-back items drop off this list and stay visible in the ledger history.
-  "Treasurer fronted $X" appears here too when it applies.
+- Same two boxes as families on top. A "Treasurer fronted $X" warning appears if class money in the
+  treasurer's account goes negative.
+- **Pending reimbursements**: one line per parent owed money, with the total, each expense (date,
+  description, amount, receipt), and days waiting.
+- **Funds**: every fund collapsed by default. Each opens to a table by child: due / paid / status /
+  attendees, plus parent contacts, with an all/outstanding filter. Always alphabetical, the same in
+  every view.
+- **Transactions**: the latest 20, plus a link to `/directiva/movimientos`, the full history with
+  filters by type and fund (in the URL, so a filtered view can be bookmarked). Directiva only.
 - Data problems: failed checks with Sheet row numbers, expenses with no receipt.
 - Last refresh time and **Refresh now**.
 
 ### Receipts
-`/api/receipt/[fileId]` streams the file from Drive through the reader service account, only to
-someone who is signed in (families or directiva). There are no public Drive links.
+`/api/receipt/[fileId]` streams the file from Drive through the reader service account, **only to
+directiva members**, and only for files the Ledger references. There are no public Drive links.
 
 ---
 
@@ -300,7 +303,6 @@ Checks run on every read:
 - required tabs and headers are present
 - IDs are unique, and every reference points to something that exists
 - valid types, and amounts greater than zero
-- transfers come in pairs and never cross between the pots
 - reimburse_parent rows point to real expenses that another parent paid for
 - the same `payment_ref` isn't logged twice
 
@@ -327,7 +329,7 @@ Checks run on every read:
 3. `log_contribution`: one or more payments → `contribution` rows, matched with `payment_aliases`
    and checked against `payment_ref` for duplicates
 4. `create_event`: `Funds` row + `Participants` rows + receipts folder
-5. `close_event`: transfer pair to or from `EVENTS-POOL`, then set the status to `closed`
+5. `close_event`: set the status to `closed` and report the leftover or shortfall (no money moves)
 6. `reimburse_parent`, `refund_family`, `add_student`, `update_roster`
 7. `migrate`: apply the CHANGELOG steps from one `schema_version` to the next
 
@@ -415,14 +417,17 @@ Checks run on every read:
 | # | Question | Decision |
 |---|---|---|
 | D1 | Class fund per student or per family? | Per student; no siblings in the class |
-| D2 | Can `EVENTS-POOL` money go back to families? | No; it's spent on events |
+| D2 | Can event leftovers go back to families? | No; they're spent on events |
 | D3 | Carryover from last year? | None |
-| D4 | Headcounts on the families view? | Class fund: yes. Events: dollar amounts only |
+| D4 | Headcounts on the families view? | Class fund: yes. Events: **yes, "X of Y families"** (revised; the treasurer accepted that small events can hint at who hasn't paid) |
 | D5 | Who writes data? | The treasurer's OpenClaw agent, following the versioned skill |
 | D6 | Expense paid by another parent | Lowers the fund right away; the parent shows under "Pending reimbursements" until a `reimburse_parent` row clears it |
 | D7 | Can families see fund `notes`? | Yes, so notes must not contain names |
 | D8 | How does the agent get skill updates? | It pulls them from this repo |
 | D9 | Event pricing | Per family (`Participants.amount_due`), because siblings and adults attend. There's no per-student price for events. Schema v2 / skill 1.1.0 |
+| D10 | Event leftovers | No pool fund and no transfers: the events total is the sum of all event balances, computed live. Schema v3 / skill 1.2.0 |
+| D11 | Families view | Two boxes (class, events); no combined total, no pending reimbursements, no receipt links |
+| D12 | Directiva transactions | Latest 20 on the main page, full filterable history on `/directiva/movimientos` |
 
 ## 15. Open questions
 

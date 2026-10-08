@@ -21,6 +21,7 @@ function ledgerOf(wb: RawWorkbook) {
 }
 
 const fund = (l: ReturnType<typeof ledgerOf>, id: string) => l.funds.find((f) => f.fund.id === id)!;
+const zooRow = (wb: RawWorkbook) => wb.Funds!.find((r) => r[0] === "EV-2026-11-ZOO")!;
 
 describe("sample workbook", () => {
   const l = ledgerOf(sampleWorkbook);
@@ -53,9 +54,9 @@ describe("sample workbook", () => {
     expect(l.pendingTotalCents).toBe(1899);
   });
 
-  it("closed event moved its leftover to EVENTS-POOL", () => {
-    expect(fund(l, "EV-2026-10-PUMPKIN").balanceCents).toBe(0);
-    expect(fund(l, "EVENTS-POOL").balanceCents).toBe(900);
+  it("closed event keeps its leftover as its balance, counted in the events pot", () => {
+    expect(fund(l, "EV-2026-10-PUMPKIN").balanceCents).toBe(900);
+    expect(l.pots.events).toBe(900 + 6000);
   });
 
   it("events: each family owes its own amount; refund undoes a contribution", () => {
@@ -72,7 +73,7 @@ describe("sample workbook", () => {
 
   it("events ignore price_per_student; a blank amount_due is 'unset', not waived", () => {
     const wb = clone(sampleWorkbook);
-    wb.Funds![4][3] = 99; // stray price on an event is ignored
+    zooRow(wb)[3] = 99; // stray price on an event is ignored
     wb.Participants!.push(["EV-2026-11-ZOO", "S03", "", "1 niño"]);
     const lz = ledgerOf(wb);
     const z = fund(lz, "EV-2026-11-ZOO");
@@ -131,23 +132,12 @@ describe("row-level checks", () => {
     expect(l.issues.some((i) => i.severity === "error" && i.message.includes("VNM-1"))).toBe(true);
   });
 
-  it("transfer between class and events pots is rejected (both sides)", () => {
-    const l = ledgerOf(
-      withLedgerRows(
-        ["T0100", "2026-10-30", "CLASS-1", "transfer_out", 10, "", "", "", "other", "", "", "", "pair T0101", ""],
-        ["T0101", "2026-10-30", "EVENTS-POOL", "transfer_in", 10, "", "", "", "other", "", "", "", "pair T0100", ""],
-      ),
-    );
-    expect(fund(l, "CLASS-1").balanceCents).toBe(2754);
-    expect(fund(l, "EVENTS-POOL").balanceCents).toBe(900);
-    expect(l.issues.filter((i) => i.message.includes("between the class and events pots"))).toHaveLength(2);
-  });
-
-  it("unpaired transfer is rejected", () => {
+  it("transfer types from schema 2 are rejected", () => {
     const l = ledgerOf(
       withLedgerRows(["T0100", "2026-10-30", "EV-2026-11-ZOO", "transfer_out", 10, "", "", "", "other", "", "", "", "", ""]),
     );
     expect(fund(l, "EV-2026-11-ZOO").balanceCents).toBe(6000);
+    expect(l.issues.some((i) => i.severity === "error" && i.message.includes('invalid type "transfer_out"'))).toBe(true);
   });
 
   it("can't reimburse an expense the treasurer paid", () => {
@@ -212,7 +202,7 @@ describe("real-Sheet quirks", () => {
 
   it("a date stored as a Sheets serial number is read as a date", () => {
     const wb = clone(sampleWorkbook);
-    wb.Funds![4][5] = 46313;
+    zooRow(wb)[5] = 46313;
     expect(parseWorkbook(wb).funds.find((f) => f.id === "EV-2026-11-ZOO")!.date).toBe("2026-10-18");
   });
 });

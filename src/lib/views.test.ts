@@ -25,7 +25,10 @@ describe("families view privacy", () => {
 
   it("still has the totals families need", () => {
     const v = JSON.parse(fam);
-    expect(v.pendingReimbursementsCents).toBe(1899);
+    expect(v.pendingReimbursementsCents).toBeUndefined(); // directiva only
+    expect(v.closedEventsSurplusCents).toBe(900);
+    expect(v.events.find((e: { id: string }) => e.id === "EV-2026-11-ZOO")).toMatchObject({ paidCount: 1, payingCount: 3 });
+    expect(fam).not.toContain("file-"); // no receipt IDs for families
     expect(v.classFunds[0]).toMatchObject({ goalCents: 12000, paidCount: 2, payingCount: 3 });
     expect(v.expenses).toHaveLength(4);
   });
@@ -55,7 +58,8 @@ describe("demo workbook", () => {
     const fam = JSON.stringify(buildFamiliesView(wb, l));
     for (const s of wb.students) for (const n of [s.name, s.momName, s.dadName]) expect(fam).not.toContain(n);
     expect(fam).not.toContain("Silvana");
-    expect(l.funds.find((f) => f.fund.id === "EV-2026-09-HUERTO")!.balanceCents).toBe(0);
+    expect(l.funds.find((f) => f.fund.id === "EV-2026-09-HUERTO")!.balanceCents).toBe(1200);
+    expect(fam).not.toContain("demo-"); // no receipt IDs for families
     expect(l.pending.map((p) => p.name).sort()).toEqual(["Paula Torres", "Silvana Mendoza"]);
   });
 });

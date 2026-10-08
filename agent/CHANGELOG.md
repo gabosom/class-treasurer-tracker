@@ -3,6 +3,19 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.2.0 — 2026-10-08 — schema 3
+- **No more `EVENTS-POOL` and no more transfers.** Event leftovers stay as each event's balance;
+  the dashboard sums all event balances live. `close_event` just sets status and reports.
+- Removed `Funds.type` `events_pool` and `Ledger.type` `transfer_out` / `transfer_in`.
+- Rule 11 rewritten: class and event money never mix; nothing is moved between funds.
+- **Migration 2 → 3** (run `migrate` after updating):
+  1. Check that no `Ledger` row has `fund_id` = `EVENTS-POOL` or type `transfer_out`/`transfer_in`.
+     If any exist, **stop and show them to the treasurer**. Don't delete ledger rows.
+  2. Delete the `EVENTS-POOL` row from `Funds` (Funds rows may be deleted for this migration only).
+  3. Update dropdowns: `Funds.type` → `class, event`; `Ledger.type` → `contribution, income,
+     expense, reimburse_parent, refund_family`.
+  4. Set `Config.schema_version` = `3`.
+
 ## 1.1.0 — 2026-10-08 — schema 2
 - Event costs vary per family (siblings and adults attend), so each attending family gets its own
   `amount_due` in `Participants`. There's no per-student price for events anymore.
