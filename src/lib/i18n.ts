@@ -2,7 +2,7 @@ export type Lang = "es" | "en";
 export const LANG_COOKIE = "lang";
 
 const es = {
-  appTitle: "Tesorería de la clase",
+  appTitle: "Tesorería de LaCross 1A 2026",
   demoBanner: "Modo demo: todos los datos y nombres son ficticios.",
   schoolYear: "Año escolar 2026-27",
   updated: "Actualizado",
@@ -103,7 +103,7 @@ const es = {
 };
 
 const en: typeof es = {
-  appTitle: "Class treasury",
+  appTitle: "LaCross 1A 2026 Treasury",
   demoBanner: "Demo mode: all data and names are made up.",
   schoolYear: "School year 2026-27",
   updated: "Updated",
