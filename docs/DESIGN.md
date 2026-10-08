@@ -29,8 +29,8 @@ School year: 2026–27.
 
 ```
         Treasurer (by hand)               Claude (cloud session, from chat)
-                │                          │ "writer" token: acts as the treasurer,
-                │                          │ scope drive.file (only files this app created)
+                │                          │ "writer" token: acts as the treasurer
+                │                          │ (OAuth refresh token, scope: drive)
                 ▼                          ▼
    ┌───────────────────────────────────────────────────┐
    │ Google Sheet (owned by the treasurer; private)    │
@@ -61,10 +61,12 @@ Sheets API usage at this scale is far below Google's free limits.
 
 **Two Google credentials, one per job.**
 - **Writer (Claude's cloud session and setup scripts):** an OAuth refresh token for the treasurer's
-  own account, limited to the `drive.file` scope. That scope only reaches files *this app created*:
-  the Sheet and the Recibos folder (the setup script creates both). It can't see anything else in
-  the treasurer's Drive. Files it uploads are owned by the treasurer, so they use the treasurer's
-  storage.
+  own account with the `drive` scope. Files it uploads are owned by the treasurer, so they use the
+  treasurer's storage. The narrower `drive.file` scope can't be used: it only reaches files the
+  OAuth app itself created, and Claude already created the Sheet and folders through the chat's
+  Drive connector (see "Drive layout" below). The tradeoff: if this token leaks, it can read and
+  change the treasurer's whole Drive, not just these files. It's stored only as a secret in the
+  Claude cloud environment and on the local machine.
 - **Reader (the Vercel app):** a service account shared as **Viewer** on the Sheet and folder,
   requesting read-only scopes. If the deployed app were ever compromised, it couldn't change anything.
 
@@ -76,7 +78,19 @@ A service account *can* edit a Sheet you share with it, but receipts need the us
 one writer is simpler. The setup script tests this before relying on it (setup prompt, step A7).
 
 The OAuth app must be set to **In production**, not Testing. In Testing, refresh tokens expire
-after 7 days. `drive.file` and basic sign-in scopes don't require Google's app review.
+after 7 days. The `drive` scope is "restricted," but an unverified app used only by its owner still
+works; you click through an "unverified app" warning once.
+
+**Drive layout (already created, owned by gabosom@gmail.com):**
+```
+Tesorería Clase 2026-27/                 folder 1_ZzQ8Cm2Tl3H8ek9fiF20weMa67uSIzH
+├── Tesorería Clase 2026-27              Sheet 1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs (empty)
+└── Recibos/                             folder 1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp  (= RECEIPTS_FOLDER_ID)
+    ├── CLASS-1/                         folder 1F05YnkQRstbGnmN9fE-eDs3VYJva9pLi
+    └── <fund_id>/                       one subfolder per event, created when the event is
+                                         created; files are named YYYY-MM-DD_vendor_amount.jpg
+```
+Tabs, headers, dropdowns and formats are applied to the empty Sheet by `scripts/setup-sheet.ts`.
 
 ---
 
@@ -286,15 +300,18 @@ from time to time. Sheet version history is the audit trail.
 5. **Writer token revoked or expired** (password change, revoking access, the app left in
    Testing). Claude's writes fail loudly. Fix: re-run the one-time consent step locally and update
    the secret. A receipt doesn't count as filed until its Drive ID is in the Ledger.
-6. **Writer token leaks.** Damage is limited to the Sheet and the Recibos folder, because of
-   `drive.file`. Revoke it at myaccount.google.com → Security → Third-party access.
+6. **Writer token leaks.** It has full access to the treasurer's Drive (the `drive` scope). Kept only
+   in the cloud environment's secrets and `~/.config`. Revoke it at myaccount.google.com → Security →
+   Third-party apps. To narrow it to `drive.file`, the setup script would have to recreate the
+   Sheet and folders itself. That's possible later, before real data goes in.
 
 ---
 
 ## 11. Build phases
 
-0. **Setup (your local Claude Code, `docs/LOCAL_SETUP_PROMPT.md`)**: GCP project, OAuth app,
-   writer token, service account, Sheet + Recibos folder, template tabs, secrets.
+0. **Setup.** Done: the Drive folders and an empty Sheet, created by Claude. Remaining (your local
+   Claude Code, `docs/LOCAL_SETUP_PROMPT.md`): GCP project, OAuth app, writer token, service
+   account, template tabs, secrets.
 1. You paste the roster. Claude loads the class fund and the existing sunscreen and soccer ball expenses.
 2. Calculations module + tests.
 3. Next.js: reader + checks → directiva → families → receipt proxy → auth → ES/EN.

@@ -5,7 +5,8 @@ Paste everything below the line into Claude Code on your machine. It runs in two
 - **Part B** (after the app is built): sign-in client and Vercel.
 
 You'll do a few clicks in the Google Cloud Console (the OAuth consent screen can't be fully
-scripted) and approve one Google sign-in. The script creates the Sheet and folder for you.
+scripted) and approve one Google sign-in. The Sheet and Drive folders already exist (Claude
+created them). The script adds the tabs and structure.
 
 ---
 
@@ -13,6 +14,11 @@ You are helping me set up the infrastructure for my class treasurer tracker. The
 `github.com/gabosom/class-treasurer-tracker` (private). The design is in `docs/DESIGN.md` on branch
 `design/initial-design`. Read §2 (especially "Two Google credentials") and §3 before starting; it's the source of truth.
 My Google account is gabosom@gmail.com (personal Gmail, no Workspace).
+
+These already exist in my Drive. Don't create new ones:
+- `SHEET_ID` = `1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs` (empty Sheet "Tesorería Clase 2026-27")
+- `RECEIPTS_FOLDER_ID` = `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp` ("Recibos")
+- Parent folder: `1_ZzQ8Cm2Tl3H8ek9fiF20weMa67uSIzH` ("Tesorería Clase 2026-27")
 
 ## Ground rules
 - **Never print, log, commit or paste secret values** (the service account key, OAuth client
@@ -38,13 +44,14 @@ My Google account is gabosom@gmail.com (personal Gmail, no Workspace).
    confirm each step.
    - OAuth consent screen (Google Auth Platform):
      - user type **External**, app name "Tesorería Clase", support email gabosom@gmail.com
-     - scopes `openid`, `email`, `profile`, `https://www.googleapis.com/auth/drive.file`
+     - scopes `openid`, `email`, `profile`, `https://www.googleapis.com/auth/drive`
      - then **Publish app → In production**. This step is required: in Testing, refresh tokens
-       expire after 7 days. These scopes don't need Google's review.
+       expire after 7 days. Since only I use the app, it works without Google's review; I'll see an
+       "unverified app" warning once.
    - Create an OAuth client of type **Desktop app** named "Treasurer writer". I download its JSON
      to `~/.config/class-treasurer/writer-client.json`.
 6. **Write `scripts/authorize-writer.ts`** and run it. It does a one-time local OAuth flow
-   (loopback redirect) for scope `drive.file` only, with `access_type=offline` and `prompt=consent`.
+   (loopback redirect) for scope `https://www.googleapis.com/auth/drive` only, with `access_type=offline` and `prompt=consent`.
    It saves the refresh token to `~/.config/class-treasurer/writer-token.json`.
    I'll see an "unverified app" warning. That's expected because it's my own app: Advanced →
    continue.
@@ -53,14 +60,12 @@ My Google account is gabosom@gmail.com (personal Gmail, no Workspace).
    service account's own Drive. Expected result: `403 storageQuotaExceeded`. Show me the error
    message.
    - If the upload unexpectedly **succeeds**, stop. Tell me, then delete the test file.
-   - Either way, the design keeps writes on the user token: §2 explains why a write-limited token is preferable.
-8. **Write `scripts/setup-sheet.ts`** using the writer token (`drive.file` scope). It must be safe
-   to run more than once: it creates what's missing and never deletes or duplicates data rows.
-   It should:
-   - **Create the files** if `~/.config/class-treasurer/ids.json` doesn't exist yet:
-     - a spreadsheet named **"Tesorería Clase 2026-27"** and a Drive folder **"Recibos 2026-27"**
-     - share both with the reader service account as **reader**, with no notification email
-     - save `SHEET_ID` and `RECEIPTS_FOLDER_ID` to `ids.json`
+   - Either way, writes stay on the user token, so receipts are owned by me.
+8. **Write `scripts/setup-sheet.ts`** using the writer token. It must be safe to run more than once:
+   it creates what's missing and never deletes or duplicates data rows. It should:
+   - **Never create** a new spreadsheet or folder. Use `SHEET_ID` and `RECEIPTS_FOLDER_ID` from above.
+   - **Share** the Sheet and the parent folder (the Recibos folder inherits the share) with the
+     reader service account as **reader**, with no notification email. Skip this if already shared.
    - **Tabs and headers**: create these tabs with these headers in row 1, in this exact order:
      - `Roster`: student_id, student_name, mom_name, mom_phone, mom_email, dad_name, dad_phone, dad_email, payment_aliases, active
      - `Funds`: fund_id, name, type, price_per_student, total_cost, date, status
@@ -82,9 +87,11 @@ My Google account is gabosom@gmail.com (personal Gmail, no Workspace).
      - `yyyy-mm-dd` for dates
      - plain text for every `*_id` and `*_phone` column
    - **Seed rows**, only if missing:
+     - `Funds`: `CLASS-1`, "Fondo de clase 2026-27", class, (blank, price to be set), (blank), (blank), collecting
      - `Funds`: `EVENTS-POOL`, "Fondo de eventos", events_pool, (blank), (blank), (blank), collecting
      - `Config`: `school_year` = `2026-27`
      - `Config`: `directiva_email` = `gabosom@gmail.com` (one row per email)
+     - `Config`: `receipts_folder_id` = `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp`
 
    Add a `package.json` with only what these scripts need (`googleapis`, `tsx`, `typescript`) and npm
    scripts `authorize:writer` and `setup:sheet`. Credential paths come from environment variables,
@@ -93,7 +100,7 @@ My Google account is gabosom@gmail.com (personal Gmail, no Workspace).
    - Read every tab's header row back and show me.
    - Using the **reader** service account (read-only scopes), read `Config!A1:B3` and list the
      folder's contents. This proves the Vercel credential works.
-   - Give me the Sheet URL. It should show up in my own Drive, owned by me.
+   - Confirm the Sheet is still owned by me and still in the "Tesorería Clase 2026-27" folder.
 10. **Commit and push** to `setup/sheet-template`: the scripts, `package.json`, the lockfile and
     `.gitignore`. No credentials. Don't open a pull request.
 11. **Hand off the writer secrets to my cloud Claude environment**, one value at a time:
