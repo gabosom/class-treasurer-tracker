@@ -206,3 +206,30 @@ describe("real-Sheet quirks", () => {
     expect(parseWorkbook(wb).funds.find((f) => f.id === "EV-2026-11-ZOO")!.date).toBe("2026-10-18");
   });
 });
+
+describe("funds without a cost", () => {
+  it("are hidden from totals and cards but their transactions still count elsewhere", async () => {
+    const { buildFamiliesView, buildDirectivaView } = await import("./views");
+    const wb = clone(sampleWorkbook);
+    zooRow(wb)[4] = ""; // event without total_cost
+    const parsed = parseWorkbook(wb);
+    const l = computeLedger(parsed, TODAY);
+    expect(fund(l, "EV-2026-11-ZOO").configured).toBe(false);
+    expect(l.pots.events).toBe(900); // only the pumpkin patch
+    expect(l.treasurerCashCents).toBe(11553); // real money still counts the zoo
+    expect(l.issues.some((i) => i.severity === "warning" && i.message.includes("no total_cost"))).toBe(true);
+    const fam = buildFamiliesView(parsed, l);
+    expect(fam.events.map((e) => e.id)).toEqual(["EV-2026-10-PUMPKIN"]);
+    const dir = buildDirectivaView(parsed, l);
+    expect(dir.funds.some((f) => f.id === "EV-2026-11-ZOO")).toBe(false);
+    expect(dir.txns.some((t) => t.fundId === "EV-2026-11-ZOO")).toBe(true);
+  });
+
+  it("a class fund without a price is hidden too", () => {
+    const wb = clone(sampleWorkbook);
+    wb.Funds!.find((r) => r[0] === "CLASS-1")![3] = "";
+    const l = ledgerOf(wb);
+    expect(fund(l, "CLASS-1").configured).toBe(false);
+    expect(l.pots.class).toBe(0);
+  });
+});

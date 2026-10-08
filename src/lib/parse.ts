@@ -140,7 +140,9 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     const date = toIsoDate(r[5]);
     if (str(r[5]) && !date) warn("Funds", row, `Fund ${id}: date "${str(r[5])}" isn't YYYY-MM-DD; ignored.`);
     if (type === "class" && price === null)
-      warn("Funds", row, `Fund ${id} has no price_per_student yet, so nobody owes anything.`);
+      warn("Funds", row, `Fund ${id} has no price_per_student yet; hidden from the dashboard totals until it's set.`);
+    if (type === "event" && total === null)
+      warn("Funds", row, `Event ${id} has no total_cost yet; hidden from the dashboard totals until it's set.`);
     const fund: Fund = {
       id,
       name: str(r[1]) || id,

@@ -44,14 +44,14 @@ export interface FamiliesView {
 
 export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
   const fundName = new Map(wb.funds.map((f) => [f.id, f.name]));
-  const events = l.funds.filter((f) => f.fund.type === "event");
+  const events = l.funds.filter((f) => f.fund.type === "event" && f.configured);
   return {
     pots: l.pots,
     closedEventsSurplusCents: events
       .filter((f) => f.fund.status === "closed")
       .reduce((a, f) => a + f.balanceCents, 0),
     classFunds: l.funds
-      .filter((f) => f.fund.type === "class")
+      .filter((f) => f.fund.type === "class" && f.configured)
       .map((f) => ({
         id: f.fund.id,
         name: f.fund.name,
@@ -128,7 +128,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
     treasurerCashCents: l.treasurerCashCents,
     pendingTotalCents: l.pendingTotalCents,
     pending: l.pending,
-    funds: l.funds.map((f) => ({
+    funds: l.funds.filter((f) => f.configured).map((f) => ({
       id: f.fund.id,
       name: f.fund.name,
       type: f.fund.type,

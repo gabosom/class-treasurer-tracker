@@ -46,9 +46,10 @@ export default async function AllTransactionsPage({
             <label className="sr-only" htmlFor="fund">{t.fund}</label>
             <select id="fund" name="fund" defaultValue={fund} className={select}>
               <option value="">{t.allFunds}</option>
-              {(v?.funds ?? []).map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
+              {/* From the transactions, so funds hidden from totals (no cost yet) can still be filtered. */}
+              {[...new Map((v?.txns ?? []).map((x) => [x.fundId, x.fundName])).entries()].map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
                 </option>
               ))}
             </select>
