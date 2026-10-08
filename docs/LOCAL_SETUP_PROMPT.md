@@ -56,10 +56,12 @@ These already exist in my Drive, owned by me. **Don't create new ones.**
 2. **Vercel** (Hobby plan): install and log in to the `vercel` CLI, link the project to the repo,
    and set these env vars for Production and Preview with `vercel env add`:
    - `GOOGLE_READER_SA_JSON_B64`: base64 of `reader-sa.json`, piped in, never echoed
-   - `SHEET_ID`, `RECEIPTS_FOLDER_ID`
+   - `SHEET_ID`
    - `AUTH_SECRET` (`openssl rand -base64 32`)
    - `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
    - `FAMILIES_CODE` (ask me what code to use)
+   - `OWNER_EMAIL` = `gabosom@gmail.com`
+   - `NEXTAUTH_URL` = the production URL (Production only), so Google sign-in redirects match
 3. **Deploy and smoke test.**
    - `/` asks for the class code.
    - `/directiva` lets gabosom@gmail.com in and rejects any other Google account.

@@ -368,8 +368,9 @@ Checks run on every read:
 - Auth.js with Google for directiva (basic scopes only, so no Google review). A signed cookie and
   middleware for the families code.
 - Language: a small `es`/`en` dictionary.
-- Vercel environment variables: `GOOGLE_READER_SA_JSON_B64`, `SHEET_ID`, `RECEIPTS_FOLDER_ID`,
-  `FAMILIES_CODE`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`.
+- Vercel environment variables: `GOOGLE_READER_SA_JSON_B64`, `SHEET_ID`, `FAMILIES_CODE`,
+  `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `NEXTAUTH_URL` (production domain),
+  `OWNER_EMAIL` (always allowed into directiva). See `.env.example`.
 
 ---
 
