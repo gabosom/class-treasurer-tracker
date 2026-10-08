@@ -3,6 +3,21 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.3.0 — 2026-10-08 — schema 4
+- schema_version → 4
+- Funds tab: 5 new optional columns for event cost breakdown (`venue_per_kid`, `venue_per_adult`,
+  `venue_flat_fee`, `revenue_per_kid`, `revenue_per_adult`)
+- `create_event` populates these when a cost breakdown is given
+- Documented the optional `Config` keys `price_per_kid` / `price_per_adult` (default prices charged
+  to families; the fund's `revenue_per_*` columns override them)
+- The dashboard shows an event budget when `venue_per_kid` is set; it reads kid/adult counts from
+  `Participants.attendees`, so keep that note readable (`2 adults, 1 kid` or `2 adultos + 1 niño`).
+- **Migration 3 → 4** (run `migrate` after updating):
+  1. Append these 5 headers to row 1 of the `Funds` tab, after `notes` (I1:M1): `venue_per_kid`,
+     `venue_per_adult`, `venue_flat_fee`, `revenue_per_kid`, `revenue_per_adult`. No data rows to migrate.
+  2. Apply USD currency format to `Funds!I2:M2000`.
+  3. Set `Config.schema_version` = `4`.
+
 ## 1.2.0 — 2026-10-08 — schema 3
 - **No more `EVENTS-POOL` and no more transfers.** Event leftovers stay as each event's balance;
   the dashboard sums all event balances live. `close_event` just sets status and reports.

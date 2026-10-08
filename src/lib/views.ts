@@ -1,3 +1,4 @@
+import { type EventBudget, computeEventBudget } from "./budget";
 import type { Ledger, PendingParent, StudentStatus } from "./ledger";
 import type { Issue, Pot, Txn, Workbook } from "./schema";
 
@@ -108,6 +109,8 @@ export interface DirectivaView {
     costSet: boolean;
     priceCents: number | null;
     totalCostCents: number | null;
+    /** Events with venue_per_kid set: confirmed vs. max budget */
+    budget: EventBudget | null;
     expectedCents: number;
     collectedCents: number;
     balanceCents: number;
@@ -139,6 +142,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
       status: f.fund.status,
       notes: f.fund.notes,
       costSet: f.costSet,
+      budget: computeEventBudget(f.fund, wb.participants, wb.students, wb.defaultPrices),
       priceCents: f.fund.priceCents,
       totalCostCents: f.fund.totalCostCents,
       expectedCents: f.expectedCents,

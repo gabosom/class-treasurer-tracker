@@ -99,7 +99,7 @@ export const demoWorkbook: RawWorkbook = {
     ["CLASS-1", "Fondo de clase 2026-27", "class", 40, "", "", "collecting", "Protector solar, balones, materiales y refrigerios compartidos durante el año."],
     ["EV-2026-09-HUERTO", "Huerto de calabazas", "event", "", 120, "2026-09-27", "closed", "Entrada $13.50 por niño + 10%. 8 niños."],
     ["EV-2026-11-MUSEO", "Paseo 2 - Museo", "event", "", "", "2026-11-20", "collecting", "Costo total por definir; depende de cuántas familias se apunten."],
-    ["EV-2026-10-FLIP-ZONE", "Paseo 1 - Flip Zone", "event", "", flipTotal, "2026-10-18", "collecting", `Niño o hermano $20, adulto $15 (entrada + medias antideslizantes, incl. 10%). Total $${flipTotal}.`],
+    ["EV-2026-10-FLIP-ZONE", "Paseo 1 - Flip Zone", "event", "", flipTotal, "2026-10-18", "collecting", `Niño o hermano $20, adulto $15 (entrada + medias antideslizantes, incl. 10%). Total $${flipTotal}.`, 12, 5, 40, 20, 15],
   ],
   Participants: [
     [...TABS.Participants],
@@ -110,7 +110,7 @@ export const demoWorkbook: RawWorkbook = {
   Ledger: [[...TABS.Ledger], ...ledger],
   Config: [
     [...TABS.Config],
-    ["schema_version", "3"],
+    ["schema_version", "4"],
     ["school_year", "2026-27"],
     ["directiva_email", "demo@example.com"],
   ],

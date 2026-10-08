@@ -54,6 +54,15 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
   const issues: Issue[] = [];
   const rowsOf = {} as Record<TabName, Cell[][]>;
 
+  // Check schema_version first: an old Sheet should say "run migrate", not "headers don't match".
+  const configVersion = (raw.Config ?? []).slice(1).find((r) => str(r[0]) === "schema_version")?.[1];
+  if (raw.Config && str(configVersion) !== String(SCHEMA_VERSION)) {
+    throw new StructuralError(
+      `Config schema_version is "${str(configVersion) || "(missing)"}", the app expects "${SCHEMA_VERSION}". ` +
+        `Ask the agent to update the class-treasurer skill and run its migrate operation.`,
+    );
+  }
+
   for (const tab of TAB_NAMES) {
     const values = raw[tab];
     if (!values) throw new StructuralError(`Missing tab "${tab}".`);
@@ -143,6 +152,16 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
       warn("Funds", row, `Fund ${id} has no price_per_student yet; goal shows as "to be determined" until it's set.`);
     if (type === "event" && total === null)
       warn("Funds", row, `Event ${id} has no total_cost yet; goal shows as "to be determined" until it's set.`);
+    // Optional cost breakdown: an unreadable value is ignored with a warning, never fatal.
+    const optMoney = (i: number, col: string) => {
+      const v = toCents(r[i]);
+      if (v === null) return null;
+      if (Number.isNaN(v) || v < 0) {
+        warn("Funds", row, `Fund ${id}: invalid ${col} "${str(r[i])}"; ignored.`);
+        return null;
+      }
+      return v;
+    };
     const fund: Fund = {
       id,
       name: str(r[1]) || id,
@@ -152,6 +171,11 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
       date,
       status,
       notes: str(r[7]),
+      venuePerKidCents: optMoney(8, "venue_per_kid"),
+      venuePerAdultCents: optMoney(9, "venue_per_adult"),
+      venueFlatFeeCents: optMoney(10, "venue_flat_fee"),
+      revenuePerKidCents: optMoney(11, "revenue_per_kid"),
+      revenuePerAdultCents: optMoney(12, "revenue_per_adult"),
       row,
     };
     funds.push(fund);
@@ -259,5 +283,11 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     return true;
   });
 
-  return { students, funds, participants, txns, directivaEmails, issues };
+  const configMoney = (key: string) => {
+    const v = toCents(config.get(key)?.[0] ?? "");
+    return v === null || Number.isNaN(v) || v < 0 ? null : v;
+  };
+  const defaultPrices = { perKidCents: configMoney("price_per_kid"), perAdultCents: configMoney("price_per_adult") };
+
+  return { students, funds, participants, txns, directivaEmails, defaultPrices, issues };
 }

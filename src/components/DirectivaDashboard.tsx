@@ -2,6 +2,7 @@ import { formatMoney } from "@/lib/money";
 import { type Dict, type Lang, formatDate } from "@/lib/i18n";
 import type { DirectivaView } from "@/lib/views";
 import Link from "next/link";
+import { BudgetCard } from "./BudgetCard";
 import { PotTiles } from "./FamiliesDashboard";
 import { FundTable } from "./FundTable";
 import { LedgerTable, receiptLink, studentNameMap } from "./LedgerTable";
@@ -98,6 +99,7 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
                       : `${t.totalCost}: ${f.totalCostCents === null ? t.tbd : $(f.totalCostCents)}`}
                   </p>
                   {f.notes && <p className="text-sm text-ink-3">{f.notes}</p>}
+                  {f.budget && <BudgetCard b={f.budget} t={t} lang={lang} />}
                   <FundTable
                     lines={f.lines}
                     lang={lang}

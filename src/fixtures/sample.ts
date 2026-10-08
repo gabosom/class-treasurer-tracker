@@ -49,7 +49,7 @@ export const sampleWorkbook: RawWorkbook = {
   ],
   Config: [
     [...TABS.Config],
-    ["schema_version", "3"],
+    ["schema_version", "4"],
     ["school_year", "2026-27"],
     ["directiva_email", "gabosom@gmail.com"],
     ["receipts_folder_id", "1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp"],

@@ -116,9 +116,16 @@ describe("structural errors", () => {
     expect(() => parseWorkbook(wb)).not.toThrow();
   });
 
+  it("an old Sheet reports the schema version (run migrate), not a header mismatch", () => {
+    const wb = clone(sampleWorkbook);
+    wb.Config![1] = ["schema_version", "3"];
+    wb.Funds![0] = wb.Funds![0].slice(0, 8); // schema 3 headers
+    expect(() => parseWorkbook(wb)).toThrow(/schema_version is "3".*migrate/);
+  });
+
   it("schema_version mismatch", () => {
     const wb = clone(sampleWorkbook);
-    wb.Config![1] = ["schema_version", "1"];
+    wb.Config![1] = ["schema_version", "3"];
     expect(() => parseWorkbook(wb)).toThrow(/schema_version/);
   });
 });

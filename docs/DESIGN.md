@@ -128,6 +128,11 @@ other tabs (formulas, reports); the app ignores them. Columns are listed in thei
 | 6 | date | `2026-11-14` | event date |
 | 7 | status | `collecting` \| `closed` | |
 | 8 | notes | `Bus $200 + entradas 15×$12 = $380 (incl. 10% colchón). Padres pagan su entrada aparte.` | how the cost was worked out. **Shown to families**, so no student or family names |
+| 9 | venue_per_kid | `9.00` | optional, events: what the venue charges per child (schema 4) |
+| 10 | venue_per_adult | `3.00` | optional, events: venue charge per adult |
+| 11 | venue_flat_fee | `50.00` | optional, events: flat venue fees |
+| 12 | revenue_per_kid | `11.00` | optional: charged to families per kid; overrides `Config.price_per_kid` |
+| 13 | revenue_per_adult | `6.50` | optional: charged per adult; overrides `Config.price_per_adult` |
 
 - **Class fund**: you set `price_per_student`. Every active student owes it.
   Goal = price × active students (computed).
@@ -214,10 +219,11 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 ### `Config` — key/value
 | key | example | notes |
 |---|---|---|
-| schema_version | `3` | must match the skill's schema version (§9) |
+| schema_version | `4` | must match the skill's schema version (§9) |
 | school_year | `2026-27` | |
 | directiva_email | `gabosom@gmail.com` | one row per member; controls who can open `/directiva` |
 | receipts_folder_id | `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp` | |
+| price_per_kid / price_per_adult | `11` / `6.5` | optional: default event prices charged to families |
 
 ---
 
@@ -244,6 +250,18 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
   live. A closed event's leftover simply stays as its balance.
 
 ---
+
+- **Event budget** (directiva, only when `venue_per_kid` is set), in two columns:
+  - **Confirmed**: families with a `Participants` row whose `attendees` note can be read.
+  - **Max**: confirmed plus every unconfirmed family (active students with no row, or an unreadable
+    note), each assumed to bring the most common confirmed group (ties go to the larger group;
+    1 kid + 1 adult if nobody is confirmed yet).
+  - Per column: revenue = kids × revenue_per_kid + adults × revenue_per_adult (the fund's value, or
+    `Config.price_per_*`); venue subtotal = kids × venue_per_kid + adults × venue_per_adult +
+    venue_flat_fee; **drinks/snacks max** = revenue − venue subtotal (zero surplus); surplus/deficit
+    = revenue − total_cost.
+  - Kid/adult counts come from `attendees` ("2 adults, 1 kid" or "1 niño + 1 hermano + 2 adultos";
+    siblings count as kids).
 
 ## 6. Leftovers: two separate pots
 
@@ -433,6 +451,7 @@ Checks run on every read:
 | D12 | Directiva transactions | Latest 20 on the main page, full filterable history on `/directiva/movimientos` |
 | D13 | Directiva access | Shared `DIRECTIVA_CODE` for now (not every member has Google). Google sign-in later, once emails are gathered |
 | D14 | Funds without a cost | Still shown and counted in totals (their spending is real). The goal or total cost shows as "por definir" (to be determined), with no progress bar, plus a directiva warning |
+| D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card with confirmed vs. max columns. **Open:** the request said a positive surplus "goes to the class fund", which conflicts with D10/rule 11 (event money stays in events). Accounting unchanged until the treasurer confirms |
 
 ## 15. Open questions
 
