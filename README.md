@@ -10,14 +10,15 @@ Ledger and dashboards for a school class treasury (2026-27).
 
 ## App
 
-Next.js (App Router) on Vercel. `/` is the families view (class code), `/directiva` is the
+Next.js (App Router) on Vercel. **Demo mode:** with `SHEET_ID` unset (locally or on Vercel) the
+app shows a fictional class (`src/fixtures/demo.ts`) behind a "demo" banner and skips sign-in.
+Setting `SHEET_ID` switches to the real Sheet and turns sign-in on. `/` is the families view (class code), `/directiva` is the
 leadership view (Google sign-in, emails from the Sheet's `Config` tab). Money math lives in
 `src/lib/ledger.ts` (spec: `docs/DESIGN.md` §5); Sheet parsing and checks in `src/lib/parse.ts`.
 
 ```bash
 npm install
-cp .env.example .env.local   # sample data + no sign-in
-npm run dev                  # http://localhost:3000 (code: prueba)
+npm run dev                  # no SHEET_ID → demo mode: fictional data, no sign-in
 npm test                     # calculations, checks, privacy of the families view
 npm run lint && npm run typecheck
 ```

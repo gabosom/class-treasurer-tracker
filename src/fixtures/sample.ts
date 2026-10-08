@@ -1,6 +1,6 @@
 import { type RawWorkbook, TABS } from "@/lib/schema";
 
-// Fictional data for local development (DATA_SOURCE=fixture) and tests.
+// Small fictional workbook for unit tests (demo mode uses fixtures/demo.ts).
 // Covers: class fund, a paid-by-another-parent expense with partial payback,
 // an event with a refund, a closed event with its leftover moved to EVENTS-POOL.
 

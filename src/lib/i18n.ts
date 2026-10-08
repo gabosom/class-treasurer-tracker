@@ -3,6 +3,7 @@ export const LANG_COOKIE = "lang";
 
 const es = {
   appTitle: "Tesorería de la clase",
+  demoBanner: "Modo demo: todos los datos y nombres son ficticios.",
   schoolYear: "Año escolar 2026-27",
   updated: "Actualizado",
   refresh: "Actualizar ahora",
@@ -100,6 +101,7 @@ const es = {
 
 const en: typeof es = {
   appTitle: "Class treasury",
+  demoBanner: "Demo mode: all data and names are made up.",
   schoolYear: "School year 2026-27",
   updated: "Updated",
   refresh: "Refresh now",

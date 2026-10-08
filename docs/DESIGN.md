@@ -72,6 +72,10 @@ limits don't come up.
 - All math happens on the server. The families page never receives a name.
 - Money is stored and computed in integer cents.
 
+**Demo mode.** If `SHEET_ID` isn't set, the app shows a fictional class with a "demo" banner
+and no sign-in, for reviewing the design before the Sheet is connected. Real data only loads when
+`SHEET_ID` is set, and then sign-in is always required, so the demo bypass can never expose it.
+
 **Refresh (Vercel Hobby).** No cron job needed. A page more than 5 minutes old rebuilds the next
 time someone opens it. Both views also have a **Refresh now** button.
 

@@ -4,7 +4,7 @@ import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { cookies } from "next/headers";
-import { getSnapshot } from "./data";
+import { getSnapshot, isDemo } from "./data";
 
 export const FAMILIES_COOKIE = "fam";
 
@@ -28,9 +28,6 @@ export function codeMatches(input: string): boolean {
   const b = Buffer.from(code.trim().toLowerCase());
   return a.length === b.length && timingSafeEqual(a, b);
 }
-
-export const devBypass = () =>
-  process.env.NODE_ENV !== "production" && process.env.DEV_AUTH_BYPASS === "1";
 
 /** Emails allowed into /directiva: Config tab, plus OWNER_EMAIL so the treasurer is never locked out. */
 async function allowedEmails(): Promise<Set<string>> {
@@ -65,7 +62,7 @@ export type DirectivaAccess =
   | { state: "denied"; email: string };
 
 export async function directivaAccess(): Promise<DirectivaAccess> {
-  if (devBypass()) return { state: "allowed", email: "dev@localhost" };
+  if (isDemo()) return { state: "allowed", email: "demo@example.com" };
   const session = await getServerSession(authOptions);
   const email = session?.user?.email?.toLowerCase();
   if (!email) return { state: "signed_out" };
@@ -74,7 +71,7 @@ export async function directivaAccess(): Promise<DirectivaAccess> {
 }
 
 export async function hasFamiliesAccess(): Promise<boolean> {
-  if (devBypass()) return true;
+  if (isDemo()) return true;
   const value = (await cookies()).get(FAMILIES_COOKIE)?.value;
   if (value && process.env.FAMILIES_CODE) {
     const expected = familiesToken();

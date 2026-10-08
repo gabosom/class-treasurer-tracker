@@ -44,3 +44,18 @@ describe("directiva view", () => {
     expect(d.pending[0].name).toBe("Ana Gómez");
   });
 });
+
+describe("demo workbook", () => {
+  it("parses with no errors and keeps names out of the families view", async () => {
+    const { demoWorkbook } = await import("@/fixtures/demo");
+    const wb = parseWorkbook(demoWorkbook);
+    const l = computeLedger(wb, new Date("2026-10-08T12:00:00Z"));
+    expect(l.issues.filter((i) => i.severity === "error")).toEqual([]);
+    expect(wb.students).toHaveLength(20);
+    const fam = JSON.stringify(buildFamiliesView(wb, l));
+    for (const s of wb.students) for (const n of [s.name, s.momName, s.dadName]) expect(fam).not.toContain(n);
+    expect(fam).not.toContain("Silvana");
+    expect(l.funds.find((f) => f.fund.id === "EV-2026-09-HUERTO")!.balanceCents).toBe(0);
+    expect(l.pending.map((p) => p.name).sort()).toEqual(["Paula Torres", "Silvana Mendoza"]);
+  });
+});

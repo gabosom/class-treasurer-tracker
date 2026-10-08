@@ -1,5 +1,5 @@
 import { hasFamiliesAccess } from "@/lib/auth";
-import { getSnapshot, isFixtureMode } from "@/lib/data";
+import { getSnapshot, isDemo } from "@/lib/data";
 import { fetchReceipt } from "@/lib/google";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ fileId: string }> }) {
@@ -11,8 +11,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ fileId:
   const { snapshot } = await getSnapshot();
   if (!snapshot?.receiptIds.includes(fileId)) return new Response("Not found", { status: 404 });
 
-  if (isFixtureMode()) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#eee"/><text x="50%" y="50%" text-anchor="middle" font-family="sans-serif" font-size="20">Sample receipt: ${fileId.replace(/[^\w-]/g, "")}</text></svg>`;
+  if (isDemo()) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#eee"/><text x="50%" y="50%" text-anchor="middle" font-family="sans-serif" font-size="20">Recibo de ejemplo: ${fileId.replace(/[^\w-]/g, "")}</text></svg>`;
     return new Response(svg, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "private, no-store" } });
   }
 

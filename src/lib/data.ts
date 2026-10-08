@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { sampleWorkbook } from "@/fixtures/sample";
+import { demoWorkbook } from "@/fixtures/demo";
 import { fetchWorkbook } from "./google";
 import { computeLedger } from "./ledger";
 import { parseWorkbook } from "./parse";
@@ -9,7 +9,11 @@ import { buildDirectivaView, type DirectivaView } from "./views";
 export const SHEET_TAG = "sheet";
 const REVALIDATE_SECONDS = 300;
 
-export const isFixtureMode = () => process.env.DATA_SOURCE === "fixture";
+/**
+ * Demo mode: no SHEET_ID configured, so the app shows fictional data and skips sign-in.
+ * Real data always requires SHEET_ID, so the sign-in bypass can never expose it.
+ */
+export const isDemo = () => !process.env.SHEET_ID;
 
 export interface Snapshot {
   view: DirectivaView;
@@ -20,7 +24,7 @@ export interface Snapshot {
 
 const loadSnapshot = unstable_cache(
   async (): Promise<Snapshot> => {
-    const raw = isFixtureMode() ? sampleWorkbook : await fetchWorkbook();
+    const raw = isDemo() ? demoWorkbook : await fetchWorkbook();
     const wb = parseWorkbook(raw);
     const ledger = computeLedger(wb);
     return {
@@ -30,7 +34,7 @@ const loadSnapshot = unstable_cache(
       fetchedAt: new Date().toISOString(),
     };
   },
-  ["snapshot-v1"],
+  ["snapshot-v2"],
   { tags: [SHEET_TAG], revalidate: REVALIDATE_SECONDS },
 );
 
