@@ -111,7 +111,8 @@ export interface DirectivaView {
       studentId: string;
       studentName: string;
       parents: { name: string; phone: string; email: string }[];
-      dueCents: number;
+      attendees: string;
+      dueCents: number | null;
       paidCents: number;
       status: StudentStatus;
     }[];
@@ -144,6 +145,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
           { name: x.student.momName, phone: x.student.momPhone, email: x.student.momEmail },
           { name: x.student.dadName, phone: x.student.dadPhone, email: x.student.dadEmail },
         ].filter((p) => p.name || p.phone || p.email),
+        attendees: x.attendees,
         dueCents: x.dueCents,
         paidCents: x.paidCents,
         status: x.status,

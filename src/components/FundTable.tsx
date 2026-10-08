@@ -9,7 +9,8 @@ export interface FundTableLine {
   studentId: string;
   studentName: string;
   parents: { name: string; phone: string; email: string }[];
-  dueCents: number;
+  attendees: string;
+  dueCents: number | null;
   paidCents: number;
   status: StudentStatus;
 }
@@ -19,6 +20,7 @@ const ICON: Record<StudentStatus, { icon: string; cls: string }> = {
   partial: { icon: "◐", cls: "text-warn" },
   unpaid: { icon: "○", cls: "text-bad" },
   waived: { icon: "–", cls: "text-ink-3" },
+  unset: { icon: "?", cls: "text-warn" },
 };
 
 export function FundTable({
@@ -40,8 +42,9 @@ export function FundTable({
   };
 }) {
   const [onlyPending, setOnlyPending] = useState(false);
-  const shown = onlyPending ? lines.filter((l) => l.status === "unpaid" || l.status === "partial") : lines;
-  const pendingCount = lines.filter((l) => l.status === "unpaid" || l.status === "partial").length;
+  const isPending = (l: FundTableLine) => l.status === "unpaid" || l.status === "partial" || l.status === "unset";
+  const shown = onlyPending ? lines.filter(isPending) : lines;
+  const pendingCount = lines.filter(isPending).length;
   const $ = (c: number) => formatMoney(c, lang);
   const btn = (on: boolean) =>
     `rounded-md border px-2.5 py-1 text-xs ${on ? "border-accent bg-accent text-white" : "border-line text-ink-2"}`;
@@ -70,7 +73,10 @@ export function FundTable({
           <tbody>
             {shown.map((l) => (
               <tr key={l.studentId} className="border-b border-line align-top last:border-0">
-                <td className="px-4 py-2 text-ink sm:px-2">{l.studentName}</td>
+                <td className="px-4 py-2 text-ink sm:px-2">
+                  {l.studentName}
+                  {l.attendees && <div className="text-xs text-ink-3">{l.attendees}</div>}
+                </td>
                 <td className="px-2 py-2 text-ink-2">
                   {l.parents.map((p, i) => (
                     <div key={i}>
@@ -86,7 +92,7 @@ export function FundTable({
                     </div>
                   ))}
                 </td>
-                <td className="num px-2 py-2 text-right text-ink">{$(l.dueCents)}</td>
+                <td className="num px-2 py-2 text-right text-ink">{l.dueCents === null ? "—" : $(l.dueCents)}</td>
                 <td className="num px-2 py-2 text-right text-ink">{$(l.paidCents)}</td>
                 <td className="px-4 py-2 sm:px-2">
                   <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-ink">

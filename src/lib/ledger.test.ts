@@ -58,19 +58,33 @@ describe("sample workbook", () => {
     expect(fund(l, "EVENTS-POOL").balanceCents).toBe(900);
   });
 
-  it("refund undoes a contribution", () => {
+  it("events: each family owes its own amount; refund undoes a contribution", () => {
     const z = fund(l, "EV-2026-11-ZOO");
-    expect(z.collectedCents).toBe(5000);
-    expect(z.balanceCents).toBe(5000);
-    expect(z.expectedCents).toBe(7500);
-    expect(z.paidCount).toBe(2);
-    expect(z.lines.find((x) => x.student.id === "S04")!.status).toBe("unpaid");
+    expect(z.collectedCents).toBe(6000); // 30 + 30 + 25 − 25 refunded
+    expect(z.balanceCents).toBe(6000);
+    expect(z.expectedCents).toBe(9000); // 30 + 45 + 15
+    const status = (id: string) => z.lines.find((x) => x.student.id === id)!;
+    expect(status("S01").status).toBe("paid");
+    expect(status("S02")).toMatchObject({ dueCents: 4500, paidCents: 3000, status: "partial", attendees: "1 niño + 1 hermano + 1 adulto" });
+    expect(status("S04").status).toBe("unpaid");
+    expect(z.paidCount).toBe(1);
+  });
+
+  it("events ignore price_per_student; a blank amount_due is 'unset', not waived", () => {
+    const wb = clone(sampleWorkbook);
+    wb.Funds![4][3] = 99; // stray price on an event is ignored
+    wb.Participants!.push(["EV-2026-11-ZOO", "S03", "", "1 niño"]);
+    const lz = ledgerOf(wb);
+    const z = fund(lz, "EV-2026-11-ZOO");
+    expect(z.lines.find((x) => x.student.id === "S03")).toMatchObject({ dueCents: null, status: "unset" });
+    expect(z.expectedCents).toBe(9000);
+    expect(lz.issues.some((i) => i.severity === "warning" && i.message.includes("no amount_due"))).toBe(true);
   });
 
   it("pots and treasurer cash reconcile with cash in/out", () => {
-    expect(l.pots).toEqual({ class: 2754, events: 5900 });
-    // in: 220.00 contributions; out: 25 refund + 59.47 treasurer-paid expenses + 30 reimbursed
-    expect(l.treasurerCashCents).toBe(22000 - 2500 - 5947 - 3000);
+    expect(l.pots).toEqual({ class: 2754, events: 6900 });
+    // in: 230.00 contributions; out: 25 refund + 59.47 treasurer-paid expenses + 30 reimbursed
+    expect(l.treasurerCashCents).toBe(23000 - 2500 - 5947 - 3000);
     expect(l.treasurerCashCents).toBe(l.pots.class + l.pots.events + l.pendingTotalCents);
   });
 
@@ -103,7 +117,7 @@ describe("structural errors", () => {
 
   it("schema_version mismatch", () => {
     const wb = clone(sampleWorkbook);
-    wb.Config![1] = ["schema_version", "2"];
+    wb.Config![1] = ["schema_version", "1"];
     expect(() => parseWorkbook(wb)).toThrow(/schema_version/);
   });
 });
@@ -133,7 +147,7 @@ describe("row-level checks", () => {
     const l = ledgerOf(
       withLedgerRows(["T0100", "2026-10-30", "EV-2026-11-ZOO", "transfer_out", 10, "", "", "", "other", "", "", "", "", ""]),
     );
-    expect(fund(l, "EV-2026-11-ZOO").balanceCents).toBe(5000);
+    expect(fund(l, "EV-2026-11-ZOO").balanceCents).toBe(6000);
   });
 
   it("can't reimburse an expense the treasurer paid", () => {
@@ -141,7 +155,7 @@ describe("row-level checks", () => {
       withLedgerRows(["T0100", "2026-10-30", "CLASS-1", "reimburse_parent", 23.47, "", "Yo", "", "zelle", "", "", "", "", "T0004"]),
     );
     expect(l.issues.some((i) => i.message.includes("paid by the treasurer"))).toBe(true);
-    expect(l.treasurerCashCents).toBe(10553);
+    expect(l.treasurerCashCents).toBe(11553);
   });
 
   it("can't reimburse more than the expense", () => {
@@ -183,7 +197,7 @@ describe("row-level checks", () => {
   it("treasurer fronting money shows as negative cash", () => {
     const wb = clone(sampleWorkbook);
     wb.Ledger!.push(["T0100", "2026-10-30", "CLASS-1", "expense", 500, "", "Tienda", "treasurer", "card", "", "f", "Algo", "", ""]);
-    expect(ledgerOf(wb).treasurerCashCents).toBe(10553 - 50000);
+    expect(ledgerOf(wb).treasurerCashCents).toBe(11553 - 50000);
   });
 });
 

@@ -119,7 +119,7 @@ other tabs (formulas, reports); the app ignores them. Columns are listed in thei
 | 1 | fund_id | `CLASS-1`, `EV-2026-11-ZOO`, `EVENTS-POOL` | |
 | 2 | name | `Fondo de clase 2026-27` | shown on both views |
 | 3 | type | `class` \| `event` \| `events_pool` | |
-| 4 | price_per_student | `25.00` | what each participant owes |
+| 4 | price_per_student | `25.00` | **class fund only**: what each student owes. Blank for events |
 | 5 | total_cost | `380.00` | events: the total, buffer included |
 | 6 | date | `2026-11-14` | event date |
 | 7 | status | `collecting` \| `closed` | |
@@ -127,20 +127,24 @@ other tabs (formulas, reports); the app ignores them. Columns are listed in thei
 
 - **Class fund**: you set `price_per_student`. Every active student owes it.
   Goal = price × active students (computed).
-- **Event**: you give the agent `total_cost`, the breakdown (goes in `notes`), and who's in. The
-  agent sets `price_per_student = ceil(total_cost ÷ participants)` to the whole dollar.
-  **The price stays fixed once set**, so families who already paid never owe a different amount.
-  Re-pricing only happens when you explicitly ask.
+- **Event**: costs vary per family, since siblings and adults come along, so there's no
+  per-student price. You give the agent the total cost (buffer included), the per-person prices
+  or breakdown (goes in `notes`), and who's coming from each family. The agent writes each
+  family's `amount_due` in `Participants` and shows you the table before writing.
+  **Amounts stay fixed once set.** A family joining later uses the same per-person prices, and
+  nobody else's amount changes unless you ask.
 - **`EVENTS-POOL`**: holds event leftovers (§6).
 
-### `Participants` — events only
+### `Participants` — who owes what for each event (schema v2)
 | # | column | example | notes |
 |---|---|---|---|
 | 1 | fund_id | `EV-2026-11-ZOO` | |
-| 2 | student_id | `S07` | |
-| 3 | amount_due_override | blank / `0` / `20` | waiver or a special price for this student |
+| 2 | student_id | `S07` | one row per attending family |
+| 3 | amount_due | `45.00` | **events: required.** That family's total (student + siblings + adults). Class fund: only for exceptions, e.g. `0` = waiver |
+| 4 | attendees | `1 niño + 1 hermano + 1 adulto` | who's coming, no names; shown on the directiva view |
 
-The class fund needs no rows here; every active student is included. Add a row only to change one student's amount.
+A blank `amount_due` on an event shows as **"Sin monto"** (no amount set) on the directiva view,
+never as paid or waived. The class fund needs no rows here except exceptions.
 
 ### `Ledger` — one row per movement of money
 | # | column | example | used by |
@@ -203,12 +207,12 @@ T0003, the debt is cleared and your account is down $18.99. The fund doesn't cha
 | T0010 | contribution | EV-2026-11-ZOO | 25.00 | S07 |
 | T0021 | refund_family | EV-2026-11-ZOO | 25.00 | S07 |
 
-The agent also removes S07 from `Participants`, or sets her override to 0.
+The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 
 ### `Config` — key/value
 | key | example | notes |
 |---|---|---|
-| schema_version | `1` | must match the skill's schema version (§9) |
+| schema_version | `2` | must match the skill's schema version (§9) |
 | school_year | `2026-27` | |
 | directiva_email | `gabosom@gmail.com` | one row per member; controls who can open `/directiva` |
 | receipts_folder_id | `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp` | |
@@ -217,10 +221,12 @@ The agent also removes S07 from `Participants`, or sets her override to 0.
 
 ## 5. Calculations (unit-tested; these definitions are the spec)
 
-- **Due (student, fund)**: the override if set, otherwise `price_per_student`.
-  Applies to active students for the class fund, and to rows in `Participants` for events.
+- **Due (student, fund)**:
+  - Events: the family's `Participants.amount_due`. Blank means "no amount set," not zero.
+  - Class fund: every active student owes `price_per_student`, unless a `Participants` row sets
+    a different amount.
 - **Paid (student, fund)**: contributions − refund_family for that student and fund.
-- **Status**: `paid` (paid ≥ due), `partial`, `unpaid`, `waived` (due = 0).
+- **Status**: `paid` (paid ≥ due), `partial`, `unpaid`, `waived` (due = 0), `unset` (event amount not set yet).
 - **Fund balance**: contribution + income + transfer_in − expense − refund_family − transfer_out.
 - **Owed to parents**: expenses with `paid_by ≠ treasurer`, minus the reimburse_parent rows
   linked to them.
@@ -412,6 +418,7 @@ Checks run on every read:
 | D6 | Expense paid by another parent | Lowers the fund right away; the parent shows under "Pending reimbursements" until a `reimburse_parent` row clears it |
 | D7 | Can families see fund `notes`? | Yes, so notes must not contain names |
 | D8 | How does the agent get skill updates? | It pulls them from this repo |
+| D9 | Event pricing | Per family (`Participants.amount_due`), because siblings and adults attend. There's no per-student price for events. Schema v2 / skill 1.1.0 |
 
 ## 15. Open questions
 

@@ -1,6 +1,6 @@
 // Sheet schema. Must match agent/class-treasurer/SKILL.md §3 for the same schema_version.
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const TABS = {
   Roster: [
@@ -16,7 +16,7 @@ export const TABS = {
     "active",
   ],
   Funds: ["fund_id", "name", "type", "price_per_student", "total_cost", "date", "status", "notes"],
-  Participants: ["fund_id", "student_id", "amount_due_override"],
+  Participants: ["fund_id", "student_id", "amount_due", "attendees"],
   Ledger: [
     "txn_id",
     "date",
@@ -90,7 +90,9 @@ export interface Fund {
 export interface Participant {
   fundId: string;
   studentId: string;
-  overrideCents: number | null;
+  /** events: what this family owes (required); class fund: exception to price_per_student */
+  amountDueCents: number | null;
+  attendees: string;
   row: number;
 }
 

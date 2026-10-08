@@ -140,7 +140,7 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
       return err("Funds", row, `Fund ${id}: invalid total_cost.`);
     const date = toIsoDate(r[5]);
     if (str(r[5]) && !date) warn("Funds", row, `Fund ${id}: date "${str(r[5])}" isn't YYYY-MM-DD; ignored.`);
-    if (type !== "events_pool" && price === null)
+    if (type === "class" && price === null)
       warn("Funds", row, `Fund ${id} has no price_per_student yet, so nobody owes anything.`);
     const fund: Fund = {
       id,
@@ -165,17 +165,19 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     const row = rowNum(i);
     const fundId = str(r[0]);
     const studentId = str(r[1]);
-    const override = toCents(r[2]);
+    const amountDue = toCents(r[2]);
     if (!fundById.has(fundId)) return err("Participants", row, `Unknown fund_id "${fundId}".`);
     if (fundById.get(fundId)!.type === "events_pool")
       return err("Participants", row, `EVENTS-POOL can't have participants.`);
     if (!studentIds.has(studentId)) return err("Participants", row, `Unknown student_id "${studentId}".`);
-    if (Number.isNaN(override) || (override !== null && override < 0))
-      return err("Participants", row, `Invalid amount_due_override.`);
+    if (Number.isNaN(amountDue) || (amountDue !== null && amountDue < 0))
+      return err("Participants", row, `Invalid amount_due.`);
+    if (amountDue === null && fundById.get(fundId)!.type === "event")
+      warn("Participants", row, `${studentId} in ${fundId} has no amount_due yet.`);
     const key = `${fundId}|${studentId}`;
     if (seenParticipant.has(key)) return err("Participants", row, `${studentId} is listed twice for ${fundId}.`);
     seenParticipant.add(key);
-    participants.push({ fundId, studentId, overrideCents: override, row });
+    participants.push({ fundId, studentId, amountDueCents: amountDue, attendees: str(r[3]), row });
   });
 
   // Ledger: per-row checks first

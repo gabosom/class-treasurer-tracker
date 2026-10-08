@@ -5,8 +5,8 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.0.2**
-- **schema_version: 1**
+- **skill_version: 1.1.0**
+- **schema_version: 2**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
 
@@ -33,7 +33,7 @@ ignore it.
 
 ## 2. Rules (always)
 
-1. **Pre-flight before any write.** Read `Config` and check `schema_version` = `1`, then read
+1. **Pre-flight before any write.** Read `Config` and check `schema_version` = `2`, then read
    the header row of every tab you'll touch and check it matches §3 exactly. If either is off,
    **stop**, write nothing, and tell the treasurer. (Exceptions: `setup` and `migrate`.)
 2. **Stay inside the parent folder.** Never read, create, move, share or delete anything outside it.
@@ -59,7 +59,7 @@ ignore it.
 
 ---
 
-## 3. Sheet schema (schema_version 1)
+## 3. Sheet schema (schema_version 2)
 
 Headers in row 1, in this exact order. Tabs not listed here belong to the treasurer: never
 modify them.
@@ -70,8 +70,12 @@ modify them.
 **`Funds`**
 `fund_id, name, type, price_per_student, total_cost, date, status, notes`
 
-**`Participants`** (events only)
-`fund_id, student_id, amount_due_override`
+**`Participants`** (who owes what for an event; for the class fund, only exceptions)
+`fund_id, student_id, amount_due, attendees`
+- **Events:** one row per family attending. `amount_due` (required) is what that family owes in
+  total, for the student plus any siblings and adults. `attendees` says who's coming, with no
+  names, e.g. `1 niño + 1 hermano + 2 adultos`.
+- **Class fund:** no rows needed. Add a row only for an exception (e.g. `amount_due` = 0 for a waiver).
 
 **`Ledger`**
 `txn_id, date, fund_id, type, amount, student_id, payee, paid_by, method, payment_ref, receipt_file_id, public_desc, private_notes, reimburses_txn`
@@ -137,7 +141,7 @@ duplicate data rows.
    - `Roster.active`: checkbox
 5. Formats for rows 2–2000:
    - currency USD: `Funds.price_per_student`, `Funds.total_cost`, `Ledger.amount`,
-     `Participants.amount_due_override`
+     `Participants.amount_due`
    - date `yyyy-mm-dd`: `Funds.date`, `Ledger.date`
    - plain text: every `*_id` column, `mom_phone`, `dad_phone`, `payment_ref`, `reimburses_txn`
 6. Seed rows, only if no row with that key exists:
@@ -206,24 +210,33 @@ Venmo or Zelle work.
 7. Reply per §6, including what that student still owes for the fund.
 
 ### `create_event` — a new outing
-Needs: name, date, total cost (buffer included), cost breakdown, and which students are in.
+Needs: name, date, total cost (buffer included), how the cost breaks down, and **for each
+attending family, who's coming** (the student, siblings, adults).
 1. `fund_id` = `EV-YYYY-MM-SLUG`.
-2. `price_per_student` = total_cost ÷ number of participants, **rounded up to the whole dollar**.
-3. Append the `Funds` row: type `event`, status `collecting`, `notes` = the breakdown in Spanish
-   with no names, e.g. "Bus $200 + entradas 15×$12 = $380 (incl. 10%). Adultos pagan su entrada aparte."
-4. Append one `Participants` row per student (no override).
+2. Work out each family's `amount_due`:
+   - If the treasurer gives per-person prices (e.g. "niño $15, adulto $10"), amount_due = Σ
+     people × price for that family.
+   - If only a total is given, per-person share = total_cost ÷ total attendees across all
+     families, **rounded up to the whole dollar**; amount_due = share × that family's attendees.
+   - If the treasurer gives a family's amount directly, use it.
+3. Append the `Funds` row: type `event`, status `collecting`, `price_per_student` **blank**,
+   `total_cost` = the total. `notes` = the breakdown and per-person prices in Spanish, with no names, e.g.
+   "Entrada niño $15, adulto $10; bus $120 repartido. Total $660 (incl. 10%)."
+4. Append one `Participants` row per family: `amount_due`, plus `attendees` like `1 niño + 2 adultos`.
 5. Create the folder `Recibos/<fund_id>/`.
-6. Reply with the price per student, the participant count, the expected total, and how it
-   compares to the total cost.
+6. **Before writing**, show the treasurer a table (student, attendees, amount_due) with the
+   expected total (Σ amount_due) vs. total cost, and write after they confirm.
 
-**The price is fixed once set.** If participants are added or removed later, add or remove
-`Participants` rows but **don't change the price**. Report the new expected total vs. total
-cost, and suggest re-pricing only if the gap is more than 10%. Re-price only when the treasurer
-explicitly says to.
+**Amounts are fixed once set.** If a family joins later, add their row using the same per-person
+prices. If a family drops, see `update_participants`. Never change another family's amount_due
+unless the treasurer explicitly asks. Report the new expected total vs. total cost whenever it changes.
 
 ### `update_participants`
-Add or remove `Participants` rows. To remove a student who already paid: ask whether to refund
-(`refund_family`) or keep the money. Waivers and discounts: set `amount_due_override` (0 for a waiver).
+- **Family joins or adds people:** add or edit that family's row (`amount_due`, `attendees`)
+  using the event's per-person prices from `notes`.
+- **Family drops:** if they haven't paid, remove their row. If they paid, ask whether to refund
+  (`refund_family`) or keep the money, then remove the row or set `amount_due` to what they keep paying.
+- **Waivers/discounts:** set `amount_due` (0 for a full waiver) and say why in the reply.
 
 ### `close_event`
 Needs: which event. First confirm with the treasurer that every expense for it has been logged.
@@ -280,7 +293,10 @@ Then set `Config.schema_version`. Report each step.
 
 ## 5. Definitions (same as the dashboard)
 
-- **Due (student, fund)**: the `amount_due_override` if set, otherwise `price_per_student`.
+- **Due (student, fund)**:
+  - Events: that family's `Participants.amount_due`. Blank means not set yet, which is a problem
+    to fix, not zero.
+  - Class fund: `Participants.amount_due` if there's an exception row, otherwise `price_per_student`.
   - Class fund: every active student.
   - Events: students in `Participants`.
 - **Paid (student, fund)**: sum of `contribution` − sum of `refund_family` for that student and fund.

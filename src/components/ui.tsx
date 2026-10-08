@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import type { StudentStatus } from "@/lib/ledger";
-import type { Dict } from "@/lib/i18n";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-xl border border-line bg-surface-1 p-4 sm:p-5 ${className}`}>{children}</section>;
@@ -35,26 +33,6 @@ export function Meter({ value, max, label }: { value: number; max: number; label
     >
       <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
     </div>
-  );
-}
-
-const STATUS_STYLE: Record<StudentStatus, { icon: string; cls: string }> = {
-  paid: { icon: "✓", cls: "text-good" },
-  partial: { icon: "◐", cls: "text-warn" },
-  unpaid: { icon: "○", cls: "text-bad" },
-  waived: { icon: "–", cls: "text-ink-3" },
-};
-
-/** Status always shows icon + label, never color alone. */
-export function StatusBadge({ status, t }: { status: StudentStatus; t: Dict }) {
-  const s = STATUS_STYLE[status];
-  return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-ink">
-      <span aria-hidden className={`text-base leading-none ${s.cls}`}>
-        {s.icon}
-      </span>
-      {t.statusLabel[status]}
-    </span>
   );
 }
 

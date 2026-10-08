@@ -4,11 +4,13 @@ import { type Fund, type Issue, type Pot, type Student, type Txn, type Workbook,
 
 // Definitions in docs/DESIGN.md §5. All amounts are integer cents.
 
-export type StudentStatus = "paid" | "partial" | "unpaid" | "waived";
+export type StudentStatus = "paid" | "partial" | "unpaid" | "waived" | "unset";
 
 export interface StudentLine {
   student: Student;
-  dueCents: number;
+  /** null = amount not set yet (event row with blank amount_due) */
+  dueCents: number | null;
+  attendees: string;
   paidCents: number;
   status: StudentStatus;
 }
@@ -74,13 +76,11 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
 
     // Who owes: class fund → every active student (Participants rows only override);
     // event → students listed in Participants.
-    const overrides = new Map(
-      wb.participants.filter((p) => p.fundId === fund.id).map((p) => [p.studentId, p.overrideCents]),
-    );
+    const rows = new Map(wb.participants.filter((p) => p.fundId === fund.id).map((p) => [p.studentId, p]));
     let owing: Student[] = [];
     if (fund.type === "class") owing = wb.students.filter((s) => s.active);
     else if (fund.type === "event")
-      owing = [...overrides.keys()].map((id) => studentById.get(id)!).filter(Boolean);
+      owing = [...rows.keys()].map((id) => studentById.get(id)!).filter(Boolean);
 
     const paidBy = new Map<string, number>();
     for (const t of txns) {
@@ -89,10 +89,11 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
     }
 
     const lines: StudentLine[] = owing.map((student) => {
-      const override = overrides.get(student.id);
-      const dueCents = override ?? fund.priceCents ?? 0;
+      const p = rows.get(student.id);
+      // Events: the family's own amount_due. Class fund: exception row, else the class price.
+      const dueCents = fund.type === "event" ? (p?.amountDueCents ?? null) : (p?.amountDueCents ?? fund.priceCents ?? 0);
       const paidCents = paidBy.get(student.id) ?? 0;
-      return { student, dueCents, paidCents, status: statusOf(dueCents, paidCents) };
+      return { student, dueCents, attendees: p?.attendees ?? "", paidCents, status: statusOf(dueCents, paidCents) };
     });
     lines.sort((a, b) => a.student.name.localeCompare(b.student.name, "es"));
 
@@ -104,7 +105,7 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
         issues.push(issue(`${fund.id}: ${sid} has paid ${paid / 100} but isn't a participant (inactive or removed).`, "warning"));
     }
     for (const l of lines)
-      if (l.paidCents > l.dueCents && l.dueCents > 0)
+      if (l.dueCents !== null && l.dueCents > 0 && l.paidCents > l.dueCents)
         issues.push(issue(`${fund.id}: ${l.student.id} paid more than they owe.`, "warning"));
 
     const balanceCents =
@@ -124,7 +125,7 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
       transfersOutCents,
       collectedCents: contributionsCents - refundsCents,
       balanceCents,
-      expectedCents: lines.reduce((a, l) => a + l.dueCents, 0),
+      expectedCents: lines.reduce((a, l) => a + (l.dueCents ?? 0), 0),
       lines,
       payingCount: paying.length,
       paidCount: paying.filter((l) => l.status === "paid").length,
@@ -169,7 +170,8 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
   };
 }
 
-function statusOf(due: number, paid: number): StudentStatus {
+function statusOf(due: number | null, paid: number): StudentStatus {
+  if (due === null) return "unset";
   if (due === 0) return "waived";
   if (paid >= due) return "paid";
   if (paid > 0) return "partial";
