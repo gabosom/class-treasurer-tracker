@@ -3,6 +3,8 @@ import { type Dict, type Lang, formatDate } from "@/lib/i18n";
 import type { FamiliesView } from "@/lib/views";
 import { Card, Meter, SectionTitle, Stat } from "./ui";
 
+const MAX_EXPENSES = 30;
+
 /** The two headline boxes, shared by the families and directiva views. */
 export function PotTiles({ v, t, lang }: { v: FamiliesView; t: Dict; lang: Lang }) {
   const $ = (c: number) => formatMoney(c, lang);
@@ -109,7 +111,7 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
           <p className="text-sm text-ink-3">{t.noExpenses}</p>
         ) : (
           <ul className="divide-y divide-line">
-            {v.expenses.map((x) => (
+            {v.expenses.slice(0, MAX_EXPENSES).map((x) => (
               <li key={x.id} className="flex items-start justify-between gap-3 py-2.5 text-sm">
                 <div className="min-w-0">
                   <div className="text-ink">{x.description || "—"}</div>
@@ -122,6 +124,10 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
             ))}
           </ul>
         )}
+        <p className="mt-3 text-xs text-ink-3">
+          {v.expenses.length > MAX_EXPENSES && <>{t.latestExpenses(MAX_EXPENSES, v.expenses.length)} </>}
+          {t.expensesContact}
+        </p>
       </Card>
     </div>
   );
