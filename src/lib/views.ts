@@ -12,6 +12,8 @@ export interface FamiliesView {
     id: string;
     name: string;
     notes: string;
+    /** false: price not set yet, goal is "to be determined" */
+    costSet: boolean;
     goalCents: number;
     collectedCents: number;
     spentCents: number;
@@ -25,7 +27,7 @@ export interface FamiliesView {
     notes: string;
     date: string | null;
     status: string;
-    totalCostCents: number | null;
+    totalCostCents: number | null; // null: to be determined
     collectedCents: number;
     spentCents: number;
     balanceCents: number;
@@ -44,18 +46,19 @@ export interface FamiliesView {
 
 export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
   const fundName = new Map(wb.funds.map((f) => [f.id, f.name]));
-  const events = l.funds.filter((f) => f.fund.type === "event" && f.configured);
+  const events = l.funds.filter((f) => f.fund.type === "event");
   return {
     pots: l.pots,
     closedEventsSurplusCents: events
       .filter((f) => f.fund.status === "closed")
       .reduce((a, f) => a + f.balanceCents, 0),
     classFunds: l.funds
-      .filter((f) => f.fund.type === "class" && f.configured)
+      .filter((f) => f.fund.type === "class")
       .map((f) => ({
         id: f.fund.id,
         name: f.fund.name,
         notes: f.fund.notes,
+        costSet: f.costSet,
         goalCents: f.expectedCents,
         collectedCents: f.collectedCents + f.incomeCents,
         spentCents: f.expensesCents,
@@ -102,6 +105,7 @@ export interface DirectivaView {
     type: string;
     status: string;
     notes: string;
+    costSet: boolean;
     priceCents: number | null;
     totalCostCents: number | null;
     expectedCents: number;
@@ -128,12 +132,13 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
     treasurerCashCents: l.treasurerCashCents,
     pendingTotalCents: l.pendingTotalCents,
     pending: l.pending,
-    funds: l.funds.filter((f) => f.configured).map((f) => ({
+    funds: l.funds.map((f) => ({
       id: f.fund.id,
       name: f.fund.name,
       type: f.fund.type,
       status: f.fund.status,
       notes: f.fund.notes,
+      costSet: f.costSet,
       priceCents: f.fund.priceCents,
       totalCostCents: f.fund.totalCostCents,
       expectedCents: f.expectedCents,

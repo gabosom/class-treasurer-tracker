@@ -84,7 +84,7 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
                     <span className="ml-2 text-xs font-normal text-ink-3">{f.id}</span>
                   </span>
                   <span className="text-sm text-ink-2">
-                    {$(f.collectedCents)} / {$(f.expectedCents)} · {t.balance} {$(f.balanceCents)}
+                    {$(f.collectedCents)} / {f.costSet ? $(f.expectedCents) : t.tbd} · {t.balance} {$(f.balanceCents)}
                     {f.status === "closed" && ` · ${t.closed}`}
                   </span>
                 </summary>
@@ -93,8 +93,9 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
                     <Meter value={f.collectedCents} max={f.expectedCents} label={`${$(f.collectedCents)} / ${$(f.expectedCents)}`} />
                   )}
                   <p className="text-sm text-ink-2">
-                    {t.price}: {f.priceCents === null ? "—" : $(f.priceCents)}
-                    {f.totalCostCents !== null && ` · ${t.totalCost}: ${$(f.totalCostCents)}`}
+                    {f.type === "class"
+                      ? `${t.price}: ${f.priceCents === null ? t.tbd : $(f.priceCents)}`
+                      : `${t.totalCost}: ${f.totalCostCents === null ? t.tbd : $(f.totalCostCents)}`}
                   </p>
                   {f.notes && <p className="text-sm text-ink-3">{f.notes}</p>}
                   <FundTable

@@ -208,28 +208,25 @@ describe("real-Sheet quirks", () => {
 });
 
 describe("funds without a cost", () => {
-  it("are hidden from totals and cards but their transactions still count elsewhere", async () => {
+  it("still count in totals and cards, with the goal 'to be determined'", async () => {
     const { buildFamiliesView, buildDirectivaView } = await import("./views");
     const wb = clone(sampleWorkbook);
     zooRow(wb)[4] = ""; // event without total_cost
     const parsed = parseWorkbook(wb);
     const l = computeLedger(parsed, TODAY);
-    expect(fund(l, "EV-2026-11-ZOO").configured).toBe(false);
-    expect(l.pots.events).toBe(900); // only the pumpkin patch
-    expect(l.treasurerCashCents).toBe(11553); // real money still counts the zoo
+    expect(fund(l, "EV-2026-11-ZOO").costSet).toBe(false);
+    expect(l.pots.events).toBe(900 + 6000); // the zoo's money and spending still count
     expect(l.issues.some((i) => i.severity === "warning" && i.message.includes("no total_cost"))).toBe(true);
     const fam = buildFamiliesView(parsed, l);
-    expect(fam.events.map((e) => e.id)).toEqual(["EV-2026-10-PUMPKIN"]);
-    const dir = buildDirectivaView(parsed, l);
-    expect(dir.funds.some((f) => f.id === "EV-2026-11-ZOO")).toBe(false);
-    expect(dir.txns.some((t) => t.fundId === "EV-2026-11-ZOO")).toBe(true);
+    expect(fam.events.find((e) => e.id === "EV-2026-11-ZOO")).toMatchObject({ totalCostCents: null, balanceCents: 6000 });
+    expect(buildDirectivaView(parsed, l).funds.find((f) => f.id === "EV-2026-11-ZOO")!.costSet).toBe(false);
   });
 
-  it("a class fund without a price is hidden too", () => {
+  it("a class fund without a price keeps its spending in the class total", () => {
     const wb = clone(sampleWorkbook);
     wb.Funds!.find((r) => r[0] === "CLASS-1")![3] = "";
     const l = ledgerOf(wb);
-    expect(fund(l, "CLASS-1").configured).toBe(false);
-    expect(l.pots.class).toBe(0);
+    expect(fund(l, "CLASS-1").costSet).toBe(false);
+    expect(l.pots.class).toBe(2754);
   });
 });

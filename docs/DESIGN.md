@@ -432,7 +432,7 @@ Checks run on every read:
 | D11 | Families view | Two boxes (class, events); no combined total, no pending reimbursements, no receipt links |
 | D12 | Directiva transactions | Latest 20 on the main page, full filterable history on `/directiva/movimientos` |
 | D13 | Directiva access | Shared `DIRECTIVA_CODE` for now (not every member has Google). Google sign-in later, once emails are gathered |
-| D14 | Funds without a cost | A fund with no cost set (class: `price_per_student`; event: `total_cost`) is hidden from the top boxes and fund cards in both views, with a directiva warning. Its transactions still appear in the lists |
+| D14 | Funds without a cost | Still shown and counted in totals (their spending is real). The goal or total cost shows as "por definir" (to be determined), with no progress bar, plus a directiva warning |
 
 ## 15. Open questions
 

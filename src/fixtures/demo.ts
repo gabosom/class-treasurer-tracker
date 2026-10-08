@@ -89,12 +89,16 @@ ledger.push(txn("2026-10-07", "EV-2026-10-FLIP-ZONE", "expense", 100, "", "Flip 
 
 const flipTotal = flip.reduce((a, [, amt]) => a + amt, 0);
 
+// Upcoming outing whose total isn't set yet: shown with "por definir", deposit still counted.
+ledger.push(txn("2026-10-08", "EV-2026-11-MUSEO", "expense", 25, "", "Museo Interactivo", "treasurer", "card", "", "demo-museo", "Reserva museo", "", ""));
+
 export const demoWorkbook: RawWorkbook = {
   Roster: [[...TABS.Roster], ...roster],
   Funds: [
     [...TABS.Funds],
     ["CLASS-1", "Fondo de clase 2026-27", "class", 40, "", "", "collecting", "Protector solar, balones, materiales y refrigerios compartidos durante el año."],
     ["EV-2026-09-HUERTO", "Huerto de calabazas", "event", "", 120, "2026-09-27", "closed", "Entrada $13.50 por niño + 10%. 8 niños."],
+    ["EV-2026-11-MUSEO", "Paseo 2 - Museo", "event", "", "", "2026-11-20", "collecting", "Costo total por definir; depende de cuántas familias se apunten."],
     ["EV-2026-10-FLIP-ZONE", "Paseo 1 - Flip Zone", "event", "", flipTotal, "2026-10-18", "collecting", `Niño o hermano $20, adulto $15 (entrada + medias antideslizantes, incl. 10%). Total $${flipTotal}.`],
   ],
   Participants: [

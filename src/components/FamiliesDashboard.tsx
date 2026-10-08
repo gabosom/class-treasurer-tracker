@@ -31,11 +31,9 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
               <span className="text-2xl font-semibold text-ink">{$(f.collectedCents)}</span>{" "}
               <span className="text-sm text-ink-2">{t.raised}</span>
             </div>
-            {f.goalCents > 0 && (
-              <div className="text-sm text-ink-2">
-                {t.goal}: <span className="font-medium text-ink">{$(f.goalCents)}</span>
-              </div>
-            )}
+            <div className="text-sm text-ink-2">
+              {t.goal}: <span className="font-medium text-ink">{f.costSet ? $(f.goalCents) : t.tbd}</span>
+            </div>
           </div>
           {f.goalCents > 0 && (
             <Meter value={f.collectedCents} max={f.goalCents} label={`${$(f.collectedCents)} / ${$(f.goalCents)}`} />
@@ -79,7 +77,7 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
                   <p className="mt-2 text-sm text-ink-2">{t.familiesPaid(e.paidCount, e.payingCount)}</p>
                 )}
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                  <Row label={t.totalCost} value={e.totalCostCents === null ? "—" : $(e.totalCostCents)} />
+                  <Row label={t.totalCost} value={e.totalCostCents === null ? t.tbd : $(e.totalCostCents)} />
                   <Row label={t.collected} value={$(e.collectedCents)} />
                   <Row label={t.spent} value={$(e.spentCents)} />
                   <Row

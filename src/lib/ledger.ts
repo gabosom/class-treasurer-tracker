@@ -17,8 +17,8 @@ export interface StudentLine {
 
 export interface FundSummary {
   fund: Fund;
-  /** Cost is set (class: price_per_student; event: total_cost). Unset funds are hidden from totals and cards. */
-  configured: boolean;
+  /** Cost is set (class: price_per_student; event: total_cost). If not, the goal shows as "to be determined"; the fund still counts in totals. */
+  costSet: boolean;
   pot: Pot;
   contributionsCents: number;
   incomeCents: number;
@@ -112,7 +112,7 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
     const paying = lines.filter((l) => l.status !== "waived");
     return {
       fund,
-      configured: fund.type === "class" ? fund.priceCents !== null : fund.totalCostCents !== null,
+      costSet: fund.type === "class" ? fund.priceCents !== null : fund.totalCostCents !== null,
       pot: potOf(fund.type),
       contributionsCents,
       incomeCents,
@@ -127,11 +127,9 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
     };
   });
 
-  // Top-box totals only count funds whose cost is set; their transactions still show in the lists.
+  // Every fund counts, including ones whose cost isn't set yet: their spending is real.
   const pots: Record<Pot, number> = { class: 0, events: 0 };
-  for (const f of funds) if (f.configured) pots[f.pot] += f.balanceCents;
-  // Real money in the treasurer's account counts every fund, configured or not.
-  const allBalancesCents = funds.reduce((a, f) => a + f.balanceCents, 0);
+  for (const f of funds) pots[f.pot] += f.balanceCents;
 
   // Pending reimbursements: expenses another parent paid, minus what was paid back.
   const reimbursed = new Map<string, number>();
@@ -163,7 +161,7 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
     pots,
     pending,
     pendingTotalCents,
-    treasurerCashCents: allBalancesCents + pendingTotalCents,
+    treasurerCashCents: pots.class + pots.events + pendingTotalCents,
     issues,
   };
 }
