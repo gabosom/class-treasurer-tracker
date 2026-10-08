@@ -42,8 +42,6 @@ export interface BudgetScenario {
   revenueCents: number;
   /** Drinks/snacks budget: total_cost − venue subtotal (null if total_cost isn't set) */
   drinksCents: number | null;
-  /** revenue − total_cost (null if total_cost isn't set) */
-  surplusCents: number | null;
 }
 
 export interface EventBudget {
@@ -104,7 +102,6 @@ export function computeEventBudget(
       revenueAdultsCents,
       revenueCents,
       drinksCents: fund.totalCostCents === null ? null : fund.totalCostCents - venueSubtotalCents,
-      surplusCents: fund.totalCostCents === null ? null : revenueCents - fund.totalCostCents,
     },
     unreadableRows,
   };

@@ -257,8 +257,8 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
   - revenue = kids × revenue_per_kid + adults × revenue_per_adult (the fund's value, or
     `Config.price_per_*`)
   - venue subtotal = kids × venue_per_kid + adults × venue_per_adult + venue_flat_fee
-  - drinks/snacks = total_cost − venue subtotal
-  - surplus/deficit = revenue − total_cost
+  - drinks/snacks = total_cost − venue subtotal, so venue subtotal + drinks/snacks = total_cost
+  - no surplus line: the budget doesn't plan for one
   - Kid/adult counts come from `attendees` ("2 adults, 1 kid" or "1 niño + 1 hermano + 2 adultos";
     siblings count as kids). A blank or unreadable note is left out of the headcount and flagged
     under data problems.

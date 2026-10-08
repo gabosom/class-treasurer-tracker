@@ -32,7 +32,6 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
     </>
   );
 
-  const signed = (c: number | null) => (c === null ? "—" : `${c > 0 ? "+" : ""}${$(c)}`);
   const kidP = $(b.revenuePerKidCents);
   const adultP = $(b.revenuePerAdultCents);
 
@@ -67,14 +66,8 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
               { label: T.venueFlat, value: (s) => $(s.venueFlatFeeCents) },
               { label: T.venueSubtotal, value: (s) => $(s.venueSubtotalCents), strong: true },
               { label: T.drinks, value: (s) => (s.drinksCents === null ? "—" : $(s.drinksCents)), help: T.drinksHelp },
-            ])}
-            {section(T.result, [
-              { label: T.totalCost, value: () => (b.totalCostCents === null ? "—" : $(b.totalCostCents)) },
-              {
-                label: `${T.surplus} / ${T.deficit.toLowerCase()}`,
-                value: (s) => signed(s.surplusCents),
-                strong: true,
-              },
+              // Subtotal local + bebidas y snacks = costo total planificado
+              { label: T.totalCost, value: () => (b.totalCostCents === null ? "—" : $(b.totalCostCents)), strong: true },
             ])}
           </tbody>
         </table>

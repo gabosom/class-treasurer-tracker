@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.3.1**
+- **skill_version: 1.3.2**
 - **schema_version: 4**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -85,7 +85,7 @@ The last 5 columns are **optional** and only for events (leave them blank for th
 | `revenue_per_adult` | what we charge families per adult; overrides `Config.price_per_adult` if set |
 
 When `venue_per_kid` is set, the dashboard shows a budget for the event (revenue, venue costs,
-drinks/snacks budget, surplus) for confirmed families and for a "max" scenario. It counts kids
+drinks/snacks budget) for the families in `Participants`. It counts kids
 and adults from `Participants.attendees`, so keep that note in a readable form like
 `2 adultos + 1 niño` or `2 adults, 1 kid` (siblings count as kids).
 
