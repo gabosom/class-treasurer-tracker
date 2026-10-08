@@ -186,3 +186,19 @@ describe("row-level checks", () => {
     expect(ledgerOf(wb).treasurerCashCents).toBe(10553 - 50000);
   });
 });
+
+describe("real-Sheet quirks", () => {
+  it("empty rows with an unchecked checkbox (FALSE) are ignored", () => {
+    const wb = clone(sampleWorkbook);
+    for (let i = 0; i < 50; i++) wb.Roster!.push(["", "", "", "", "", "", "", "", "", false]);
+    const parsed = parseWorkbook(wb);
+    expect(parsed.students).toHaveLength(5);
+    expect(parsed.issues.filter((x) => x.tab === "Roster")).toEqual([]);
+  });
+
+  it("a date stored as a Sheets serial number is read as a date", () => {
+    const wb = clone(sampleWorkbook);
+    wb.Funds![4][5] = 46313;
+    expect(parseWorkbook(wb).funds.find((f) => f.id === "EV-2026-11-ZOO")!.date).toBe("2026-10-18");
+  });
+});

@@ -22,7 +22,8 @@ import {
 } from "./schema";
 
 const str = (c: Cell) => (c === null || c === undefined ? "" : String(c).trim());
-const isBlankRow = (r: Cell[]) => r.every((c) => str(c) === "");
+// Unchecked checkboxes read as FALSE, so a row that is empty except for FALSE is blank.
+const isBlankRow = (r: Cell[]) => r.every((c) => c === false || str(c) === "");
 
 /** Sheet row number (1-based, header is row 1) for data index i. */
 const rowNum = (i: number) => i + 2;

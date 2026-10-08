@@ -24,6 +24,12 @@ export function formatMoney(cents: number, lang: "es" | "en" = "es"): string {
 /** Accepts YYYY-MM-DD or M/D/YYYY; returns YYYY-MM-DD or null. */
 export function toIsoDate(cell: Cell): string | null {
   if (cell === null || cell === undefined || cell === "") return null;
+  // A date cell without date formatting comes back as a Sheets serial number (days since 1899-12-30).
+  if (typeof cell === "number") {
+    if (!Number.isInteger(cell) || cell < 36526 || cell > 73051) return null; // 2000-01-01 .. 2099-12-31
+    const d = new Date(Date.UTC(1899, 11, 30) + cell * 86_400_000);
+    return iso(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  }
   const s = String(cell).trim();
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
   if (m) return iso(+m[1], +m[2], +m[3]);
