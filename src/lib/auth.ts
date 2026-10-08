@@ -6,7 +6,36 @@ import GoogleProvider from "next-auth/providers/google";
 import { cookies } from "next/headers";
 import { getSnapshot, isDemo } from "./data";
 
-export const FAMILIES_COOKIE = "fam";
+// Access model (docs/DESIGN.md §7):
+// - Families: shared class code (FAMILIES_CODE) → signed cookie.
+// - Directiva: shared directiva code (DIRECTIVA_CODE) and/or Google sign-in (AUTH_GOOGLE_ID)
+//   restricted to the emails in the Sheet's Config tab.
+// - Demo mode (no SHEET_ID): fictional data, no sign-in.
+
+type Scope = "families" | "directiva";
+
+const CODE_ENV: Record<Scope, string> = { families: "FAMILIES_CODE", directiva: "DIRECTIVA_CODE" };
+export const COOKIE: Record<Scope, string> = { families: "fam", directiva: "dir" };
+export const COOKIE_MAX_AGE: Record<Scope, number> = {
+  families: 60 * 60 * 24 * 180,
+  directiva: 60 * 60 * 24 * 30,
+};
+
+const normalize = (s: string) => s.trim().toLowerCase();
+
+/** The configured code, or null. The directiva code is ignored if it equals the families code. */
+function configuredCode(scope: Scope): string | null {
+  const code = process.env[CODE_ENV[scope]];
+  if (!code || !normalize(code)) return null;
+  if (scope === "directiva" && process.env.FAMILIES_CODE && normalize(code) === normalize(process.env.FAMILIES_CODE)) {
+    console.error("DIRECTIVA_CODE equals FAMILIES_CODE; directiva code sign-in is disabled.");
+    return null;
+  }
+  return code;
+}
+
+export const directivaCodeEnabled = () => configuredCode("directiva") !== null;
+export const googleEnabled = () => !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
 
 const secret = () => {
   const s = process.env.AUTH_SECRET;
@@ -14,22 +43,28 @@ const secret = () => {
   return s;
 };
 
-/** Cookie value proving the class code was entered. Changing FAMILIES_CODE logs everyone out. */
-export function familiesToken(): string {
+/** Cookie value proving the code was entered. Changing the code logs everyone out of that scope. */
+export function codeToken(scope: Scope): string {
   return createHmac("sha256", secret())
-    .update(`families:${process.env.FAMILIES_CODE ?? ""}`)
+    .update(`${scope}:${normalize(configuredCode(scope) ?? "")}`)
     .digest("hex");
 }
 
-export function codeMatches(input: string): boolean {
-  const code = process.env.FAMILIES_CODE;
-  if (!code) return false;
-  const a = Buffer.from(input.trim().toLowerCase());
-  const b = Buffer.from(code.trim().toLowerCase());
-  return a.length === b.length && timingSafeEqual(a, b);
+const safeEqual = (a: string, b: string) =>
+  a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+export function codeMatches(scope: Scope, input: string): boolean {
+  const code = configuredCode(scope);
+  return !!code && safeEqual(normalize(input), normalize(code));
 }
 
-/** Emails allowed into /directiva: Config tab, plus OWNER_EMAIL so the treasurer is never locked out. */
+async function hasCodeCookie(scope: Scope): Promise<boolean> {
+  if (!configuredCode(scope)) return false;
+  const value = (await cookies()).get(COOKIE[scope])?.value;
+  return !!value && safeEqual(value, codeToken(scope));
+}
+
+/** Emails allowed into /directiva via Google: Config tab, plus OWNER_EMAIL so the treasurer is never locked out. */
 async function allowedEmails(): Promise<Set<string>> {
   const { snapshot } = await getSnapshot();
   const list = [...(snapshot?.directivaEmails ?? [])];
@@ -57,25 +92,25 @@ export const authOptions: NextAuthOptions = {
 };
 
 export type DirectivaAccess =
-  | { state: "allowed"; email: string }
+  | { state: "allowed"; who: string; via: "demo" | "code" | "google" }
   | { state: "signed_out" }
-  | { state: "denied"; email: string };
+  | { state: "denied"; who: string };
 
 export async function directivaAccess(): Promise<DirectivaAccess> {
-  if (isDemo()) return { state: "allowed", email: "demo@example.com" };
+  if (isDemo()) return { state: "allowed", who: "demo@example.com", via: "demo" };
+  if (await hasCodeCookie("directiva")) return { state: "allowed", who: "directiva", via: "code" };
+  if (!googleEnabled()) return { state: "signed_out" };
   const session = await getServerSession(authOptions);
   const email = session?.user?.email?.toLowerCase();
   if (!email) return { state: "signed_out" };
   // Re-check on every visit so removing someone from Config takes effect without waiting for their session to expire.
-  return (await allowedEmails()).has(email) ? { state: "allowed", email } : { state: "denied", email };
+  return (await allowedEmails()).has(email)
+    ? { state: "allowed", who: email, via: "google" }
+    : { state: "denied", who: email };
 }
 
 export async function hasFamiliesAccess(): Promise<boolean> {
   if (isDemo()) return true;
-  const value = (await cookies()).get(FAMILIES_COOKIE)?.value;
-  if (value && process.env.FAMILIES_CODE) {
-    const expected = familiesToken();
-    if (value.length === expected.length && timingSafeEqual(Buffer.from(value), Buffer.from(expected))) return true;
-  }
+  if (await hasCodeCookie("families")) return true;
   return (await directivaAccess()).state === "allowed";
 }

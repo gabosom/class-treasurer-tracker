@@ -1,8 +1,9 @@
 import { DirectivaDashboard } from "@/components/DirectivaDashboard";
 import { Header } from "@/components/Header";
+import { CodeForm } from "@/app/acceso/CodeForm";
 import { SignInButton, SignOutButton } from "@/components/client";
 import { Notice } from "@/components/ui";
-import { directivaAccess } from "@/lib/auth";
+import { directivaAccess, directivaCodeEnabled, googleEnabled } from "@/lib/auth";
 import { getSnapshot } from "@/lib/data";
 import { getDict } from "@/lib/request";
 
@@ -18,13 +19,21 @@ export default async function DirectivaPage() {
           <h2 className="text-lg font-semibold text-ink">{t.directiva}</h2>
           {access.state === "denied" ? (
             <>
-              <p className="text-sm text-ink-2">{t.denied(access.email)}</p>
-              <SignOutButton label={t.signOut} />
+              <p className="text-sm text-ink-2">{t.denied(access.who)}</p>
+              <SignOutButton label={t.signOut} google={googleEnabled()} />
             </>
           ) : (
             <>
               <p className="text-sm text-ink-2">{t.signInHelp}</p>
-              <SignInButton label={t.signIn} />
+              {directivaCodeEnabled() && (
+                <CodeForm
+                  scope="directiva"
+                  labels={{ code: t.directivaCode, help: t.directivaCodeHelp, enter: t.enter, wrong: t.wrongCode }}
+                />
+              )}
+              {directivaCodeEnabled() && googleEnabled() && <p className="text-xs text-ink-3">{t.or}</p>}
+              {googleEnabled() && <SignInButton label={t.signIn} />}
+              {!directivaCodeEnabled() && !googleEnabled() && <Notice kind="warning">{t.directivaNotConfigured}</Notice>}
             </>
           )}
         </main>
@@ -45,8 +54,8 @@ export default async function DirectivaPage() {
         )}
         {snapshot && <DirectivaDashboard v={snapshot.view} t={t} lang={lang} />}
         <div className="pt-4 text-right">
-          <span className="mr-3 text-xs text-ink-3">{access.email}</span>
-          <SignOutButton label={t.signOut} />
+          <span className="mr-3 text-xs text-ink-3">{access.who}</span>
+          <SignOutButton label={t.signOut} google={access.via === "google"} />
         </div>
       </main>
     </>

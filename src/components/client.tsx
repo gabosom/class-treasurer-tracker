@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { signIn, signOut } from "next-auth/react";
-import { refreshData, setLanguage } from "@/app/actions";
+import { refreshData, setLanguage, signOutDirectiva } from "@/app/actions";
 import type { Lang } from "@/lib/i18n";
 
 export function LanguageSelect({ lang, label }: { lang: Lang; label: string }) {
@@ -62,11 +62,16 @@ export function SignInButton({ label }: { label: string }) {
   );
 }
 
-export function SignOutButton({ label }: { label: string }) {
+export function SignOutButton({ label, google }: { label: string; google: boolean }) {
+  const router = useRouter();
   return (
     <button
       type="button"
-      onClick={() => signOut({ callbackUrl: "/directiva" })}
+      onClick={async () => {
+        await signOutDirectiva();
+        if (google) await signOut({ callbackUrl: "/directiva" });
+        else router.refresh();
+      }}
       className="text-sm text-ink-2 underline underline-offset-2"
     >
       {label}

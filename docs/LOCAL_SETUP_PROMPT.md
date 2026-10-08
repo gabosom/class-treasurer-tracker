@@ -2,7 +2,8 @@
 
 Paste everything below the line into Claude Code on your machine. It runs in two parts:
 - **Part A** (now): Google Cloud project and the read-only service account the Vercel app uses.
-- **Part B** (after the app is built): Google sign-in for the directiva page, and Vercel.
+- **Part B** (later, once directiva emails are gathered): Google sign-in for the directiva page.
+  Until then, directiva uses `DIRECTIVA_CODE`; see README → "Deploying: environment variables".
 
 Setting up the Sheet's structure is **not** in here. Your OpenClaw agent does that with its skill
 (`docs/AGENT_SETUP_PROMPT.md`).

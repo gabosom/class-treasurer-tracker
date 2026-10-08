@@ -1,12 +1,20 @@
 "use client";
 
 import { useActionState } from "react";
-import { enterCode } from "@/app/actions";
+import { enterDirectivaCode, enterFamiliesCode } from "@/app/actions";
 
-export function CodeForm({ labels }: { labels: { code: string; help: string; enter: string; wrong: string } }) {
-  const [state, action, pending] = useActionState(enterCode, { error: false });
+const ACTIONS = { families: enterFamiliesCode, directiva: enterDirectivaCode };
+
+export function CodeForm({
+  scope,
+  labels,
+}: {
+  scope: keyof typeof ACTIONS;
+  labels: { code: string; help: string; enter: string; wrong: string };
+}) {
+  const [state, action, pending] = useActionState(ACTIONS[scope], { error: false });
   return (
-    <form action={action} className="space-y-3 rounded-xl border border-line bg-surface-1 p-5">
+    <form action={action} className="space-y-3 rounded-xl border border-line bg-surface-1 p-5 text-left">
       <label className="block">
         <span className="text-sm font-medium text-ink">{labels.code}</span>
         <input

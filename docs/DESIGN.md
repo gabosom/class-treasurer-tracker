@@ -277,7 +277,10 @@ translated; text from the Sheet is shown as typed.
   bank details.
 - Never shown: names, per-student status, `private_notes`, `paid_by`, who is owed, receipts.
 
-### Directiva (`/directiva`, Google sign-in, emails from `Config`)
+### Directiva (`/directiva`, directiva code now; Google sign-in later)
+- Access: a shared **directiva code** (`DIRECTIVA_CODE`, different from the families code,
+  remembered 30 days). Once member emails are gathered, Google sign-in restricted to `Config`
+  emails can be turned on alongside it, and then the code removed. See README for all variables.
 - Same two boxes as families on top. A "Treasurer fronted $X" warning appears if class money in the
   treasurer's account goes negative.
 - **Pending reimbursements**: one line per parent owed money, with the total, each expense (date,
@@ -377,8 +380,8 @@ Checks run on every read:
 - Next.js (App Router) + TypeScript + Tailwind on Vercel Hobby.
 - `googleapis` (Sheets v4 + Drive v3) with read-only scopes.
 - `zod` to check rows; `vitest` for the calculations module.
-- Auth.js with Google for directiva (basic scopes only, so no Google review). A signed cookie and
-  middleware for the families code.
+- Families and directiva codes: signed httpOnly cookies (HMAC of the code with `AUTH_SECRET`).
+  Optional Google sign-in via next-auth (basic scopes only, so no Google review).
 - Language: a small `es`/`en` dictionary.
 - Vercel environment variables: `GOOGLE_READER_SA_JSON_B64`, `SHEET_ID`, `FAMILIES_CODE`,
   `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `NEXTAUTH_URL` (production domain),
@@ -428,6 +431,7 @@ Checks run on every read:
 | D10 | Event leftovers | No pool fund and no transfers: the events total is the sum of all event balances, computed live. Schema v3 / skill 1.2.0 |
 | D11 | Families view | Two boxes (class, events); no combined total, no pending reimbursements, no receipt links |
 | D12 | Directiva transactions | Latest 20 on the main page, full filterable history on `/directiva/movimientos` |
+| D13 | Directiva access | Shared `DIRECTIVA_CODE` for now (not every member has Google). Google sign-in later, once emails are gathered |
 
 ## 15. Open questions
 
