@@ -2,14 +2,11 @@ import type { BudgetScenario, EventBudget } from "@/lib/budget";
 import type { Dict, Lang } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money";
 
-/** Event budget: confirmed families vs. max (if unconfirmed families also attend). Directiva only. */
+/** Event budget for the families in Participants (no row = not attending). Directiva only. */
 export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang }) {
   const $ = (c: number) => formatMoney(c, lang);
   const T = t.budget;
-  const showMax = b.unresolvedFamilies > 0;
-  const cols: [string, BudgetScenario][] = showMax
-    ? [[T.confirmed, b.confirmed], [T.max, b.max]]
-    : [[T.confirmed, b.confirmed]];
+  const cols: [string, BudgetScenario][] = [[T.confirmed, b.confirmed]];
 
   type Row = { label: string; value: (s: BudgetScenario) => string; strong?: boolean; help?: string };
   const section = (title: string, rows: Row[]) => (
@@ -82,11 +79,7 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
           </tbody>
         </table>
       </div>
-      {showMax && (
-        <p className="mt-2 text-xs text-ink-3">
-          {T.maxAssumption(b.unresolvedFamilies, b.assumedPerFamily.kids, b.assumedPerFamily.adults)}
-        </p>
-      )}
+      {b.unreadableRows > 0 && <p className="mt-2 text-xs text-ink">⚠ {T.unreadable(b.unreadableRows)}</p>}
     </div>
   );
 }

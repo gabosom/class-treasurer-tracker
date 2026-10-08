@@ -79,7 +79,6 @@ const es = {
   budget: {
     title: "Presupuesto",
     confirmed: "Confirmado",
-    max: "Máximo",
     families: "Familias",
     kidsAdults: (f: number, k: number, a: number) => `${f} ${f === 1 ? "familia" : "familias"} · ${k} niños · ${a} adultos`,
     revenue: "Ingresos",
@@ -97,8 +96,8 @@ const es = {
     totalCost: "Costo total planificado",
     surplus: "Excedente",
     deficit: "Déficit",
-    maxAssumption: (n: number, k: number, a: number) =>
-      `Máximo: si también asisten ${n} ${n === 1 ? "familia sin confirmar" : "familias sin confirmar"}, suponiendo ${k} ${k === 1 ? "niño" : "niños"} + ${a} ${a === 1 ? "adulto" : "adultos"} cada una (el grupo más común).`,
+    unreadable: (n: number) =>
+      `${n} ${n === 1 ? "fila tiene" : "filas tienen"} el detalle de asistentes vacío o ilegible y no ${n === 1 ? "se cuenta" : "se cuentan"}. Ver "Problemas en los datos".`,
   },
   filterAll: "Todos",
   filterPending: "Pendientes",
@@ -208,7 +207,6 @@ const en: typeof es = {
   budget: {
     title: "Budget",
     confirmed: "Confirmed",
-    max: "Max",
     families: "Families",
     kidsAdults: (f, k, a) => `${f} ${f === 1 ? "family" : "families"} · ${k} kids · ${a} adults`,
     revenue: "Revenue",
@@ -226,8 +224,8 @@ const en: typeof es = {
     totalCost: "Planned total cost",
     surplus: "Surplus",
     deficit: "Deficit",
-    maxAssumption: (n, k, a) =>
-      `Max: if ${n} unconfirmed ${n === 1 ? "family also attends" : "families also attend"}, assuming ${k} ${k === 1 ? "kid" : "kids"} + ${a} ${a === 1 ? "adult" : "adults"} each (the most common group).`,
+    unreadable: (n) =>
+      `${n} ${n === 1 ? "row has" : "rows have"} a blank or unreadable attendees note and ${n === 1 ? "isn't" : "aren't"} counted. See "Data problems".`,
   },
   filterAll: "All",
   filterPending: "Outstanding",

@@ -109,7 +109,7 @@ export interface DirectivaView {
     costSet: boolean;
     priceCents: number | null;
     totalCostCents: number | null;
-    /** Events with venue_per_kid set: confirmed vs. max budget */
+    /** Events with venue_per_kid set: budget for the families in Participants */
     budget: EventBudget | null;
     expectedCents: number;
     collectedCents: number;
@@ -142,7 +142,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
       status: f.fund.status,
       notes: f.fund.notes,
       costSet: f.costSet,
-      budget: computeEventBudget(f.fund, wb.participants, wb.students, wb.defaultPrices),
+      budget: computeEventBudget(f.fund, wb.participants, wb.defaultPrices),
       priceCents: f.fund.priceCents,
       totalCostCents: f.fund.totalCostCents,
       expectedCents: f.expectedCents,

@@ -62,7 +62,7 @@ describe("demo workbook", () => {
     expect(fam).not.toContain("demo-"); // no receipt IDs for families
     expect(l.pending.map((p) => p.name).sort()).toEqual(["Paula Torres", "Silvana Mendoza"]);
     const flip = buildDirectivaView(wb, l).funds.find((f) => f.id === "EV-2026-10-FLIP-ZONE")!;
-    expect(flip.budget).toMatchObject({ venuePerKidCents: 1200, revenuePerKidCents: 2000, unresolvedFamilies: 5 });
+    expect(flip.budget).toMatchObject({ venuePerKidCents: 1200, revenuePerKidCents: 2000, unreadableRows: 0 });
     expect(flip.budget!.confirmed.revenueCents).toBe(54500); // equals Σ amount_due: per-person prices match
     expect(buildDirectivaView(wb, l).funds.find((f) => f.id === "CLASS-1")!.budget).toBeNull();
   });

@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.3.0**
+- **skill_version: 1.3.1**
 - **schema_version: 4**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -57,6 +57,10 @@ ignore it.
 11. **Class money and event money never mix.** Every expense belongs to exactly one fund:
     class things go to `CLASS-1`, outing costs go to that event's `EV-*` fund. Money is never moved
     between funds. Event leftovers simply stay as the event's balance; the dashboard adds them up.
+12. **No blanks in event participant rows.** `Participants` is the source of truth: a family with
+    a row is going, a family without one isn't. Every event row must have both `amount_due` and
+    `attendees` filled in (e.g. `2 adults, 1 kid`). If a family hasn't confirmed or the headcount
+    is unknown (e.g. a blank survey answer), **don't add the row**; ask the treasurer or wait.
 
 ---
 
@@ -241,7 +245,8 @@ attending family, who's coming** (the student, siblings, adults).
    `venue_per_kid`, `venue_per_adult`, `venue_flat_fee`, and `revenue_per_kid` /
    `revenue_per_adult` when the prices charged to families differ from `Config.price_per_kid` /
    `price_per_adult`. Leave a column blank if it doesn't apply; never guess a venue price.
-4. Append one `Participants` row per family: `amount_due`, plus `attendees` like `1 niño + 2 adultos`.
+4. Append one `Participants` row per **confirmed** family: `amount_due`, plus `attendees` like
+   `1 niño + 2 adultos`. Families who haven't confirmed (or left the headcount blank) get no row (rule 12).
 5. Create the folder `Recibos/<fund_id>/`.
 6. **Before writing**, show the treasurer a table (student, attendees, amount_due) with the
    expected total (Σ amount_due) vs. total cost, and write after they confirm.

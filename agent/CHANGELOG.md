@@ -3,6 +3,13 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.3.1 — 2026-10-08 — schema 4
+- New rule 12: no blanks in event `Participants` rows. Only confirmed families get a row, always
+  with both `amount_due` and `attendees`. Unconfirmed families or blank survey answers get no row.
+- The dashboard budget now counts only the families in `Participants` (no "max" scenario), and
+  flags any event row with a blank or unreadable `attendees` note under "data problems".
+- **Migration:** none.
+
 ## 1.3.0 — 2026-10-08 — schema 4
 - schema_version → 4
 - Funds tab: 5 new optional columns for event cost breakdown (`venue_per_kid`, `venue_per_adult`,

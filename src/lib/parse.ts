@@ -1,3 +1,4 @@
+import { parseAttendees } from "./budget";
 import { toCents, toIsoDate } from "./money";
 import {
   type Cell,
@@ -196,7 +197,9 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     if (Number.isNaN(amountDue) || (amountDue !== null && amountDue < 0))
       return err("Participants", row, `Invalid amount_due.`);
     if (amountDue === null && fundById.get(fundId)!.type === "event")
-      warn("Participants", row, `${studentId} in ${fundId} has no amount_due yet.`);
+      warn("Participants", row, `${studentId} in ${fundId} has no amount_due. Event rows shouldn't have blanks.`);
+    if (fundById.get(fundId)!.type === "event" && !parseAttendees(str(r[3])))
+      warn("Participants", row, `${studentId} in ${fundId}: attendees "${str(r[3])}" is blank or unreadable (use e.g. "2 adults, 1 kid"); left out of the budget headcount.`);
     const key = `${fundId}|${studentId}`;
     if (seenParticipant.has(key)) return err("Participants", row, `${studentId} is listed twice for ${fundId}.`);
     seenParticipant.add(key);
