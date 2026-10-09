@@ -196,7 +196,7 @@ or the reimbursement would count the spending twice.
 That's all. **No reimbursement row.** Class money already lives in your account, so paying with
 your card *is* paying from the class fund. The class balance drops by $23.47, and "money in your
 account for the class" drops too. If the class balance is ever negative (you bought something
-before families paid), the directiva view shows **"Treasurer fronted $X."** It clears itself as
+before families paid), the directiva view shows **"Owed to the treasurer: $X"** (es: "Se le debe al tesorero $X"). It clears itself as
 contributions arrive.
 
 **Example 2: Ana buys the soccer ball ($18.99) and you pay her back by Zelle.**
@@ -239,7 +239,7 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 - **Owed to parents**: expenses with `paid_by ≠ treasurer`, minus the reimburse_parent rows
   linked to them.
 - **Class money in your account**: Σ fund balances **+** owed to parents (their expenses already lowered the funds, but that money hasn't left your account yet). Equivalently: contributions + income − refunds − expenses you paid − reimbursements paid.
-  If this is negative, it shows as "Treasurer fronted $X."
+  If this is negative, it shows as "Owed to the treasurer: $X."
 - **Event summary**:
   - total cost
   - expected (Σ due)
@@ -299,7 +299,7 @@ translated; text from the Sheet is shown as typed.
 - Access: a shared **directiva code** (`DIRECTIVA_CODE`, different from the families code,
   remembered 30 days). Once member emails are gathered, Google sign-in restricted to `Config`
   emails can be turned on alongside it, and then the code removed. See README for all variables.
-- Same two boxes as families on top. A "Treasurer fronted $X" warning appears if class money in the
+- Same two boxes as families on top. An "Owed to the treasurer: $X" warning appears if class money in the
   treasurer's account goes negative.
 - **Pending reimbursements**: one line per parent owed money, with the total, each expense (date,
   description, amount, receipt), and days waiting.
