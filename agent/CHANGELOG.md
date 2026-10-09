@@ -3,6 +3,27 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.0 — 2026-10-08 — schema 5
+- schema_version → 5
+- Funds tab: new optional column `drinks_snacks` (additional drinks/snacks budget for an event).
+  The dashboard's planned total is now venue subtotal + `drinks_snacks`, and it flags a
+  difference from `total_cost`. Before, drinks/snacks was whatever was left of `total_cost`.
+- Removed the `Config` keys `price_per_kid` / `price_per_adult`. No more default prices: a blank
+  `revenue_per_*` or venue column just hides that line on the dashboard.
+- The folder "Recibos por procesar" was deleted; the skill no longer mentions it.
+- **Migration 4 → 5** (run `migrate` after updating):
+  1. Write the header `drinks_snacks` in `Funds!N1` (after `revenue_per_adult`). Apply USD currency
+     format to `Funds!N2:N2000`.
+  2. For each event with `total_cost` and at least one venue column set, fill `drinks_snacks` =
+     `total_cost` − venue subtotal (kids × venue_per_kid + adults × venue_per_adult +
+     venue_flat_fee, counting kids/adults from that event's `Participants.attendees`). That's the
+     amount the dashboard showed before. For `EV-2026-10-FLIP-ZONE`: 660 − 551 = **109.00**.
+     Show the treasurer the values before writing.
+  3. If an event has a blank `revenue_per_kid` / `revenue_per_adult` and `Config` has
+     `price_per_kid` / `price_per_adult`, copy that value into the event's column. Then delete the
+     `price_per_kid` and `price_per_adult` rows from `Config`.
+  4. Set `Config.schema_version` = `5`.
+
 ## 1.3.2 — 2026-10-08 — schema 4
 - Wording only: the dashboard budget has no surplus line and no "max" scenario; it shows revenue,
   venue costs, drinks/snacks and the planned total cost for the families in `Participants`.

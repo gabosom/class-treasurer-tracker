@@ -90,9 +90,9 @@ const es = {
     venueAdults: (p: string) => `Local: adultos × ${p}`,
     venueFlat: "Local: tarifa fija",
     venueSubtotal: "Subtotal local",
-    drinks: "Bebidas y snacks",
-    drinksHelp: "Costo total planificado − subtotal local.",
+    drinks: "Bebidas y snacks adicionales",
     totalCost: "Costo total planificado",
+    totalMismatch: (amt: string) => `No coincide con el costo total del evento en Fondos (${amt}).`,
     unreadable: (n: number) =>
       `${n} ${n === 1 ? "fila tiene" : "filas tienen"} el detalle de asistentes vacío o ilegible y no ${n === 1 ? "se cuenta" : "se cuentan"}. Ver "Problemas en los datos".`,
   },
@@ -215,9 +215,9 @@ const en: typeof es = {
     venueAdults: (p) => `Venue: adults × ${p}`,
     venueFlat: "Venue: flat fee",
     venueSubtotal: "Venue subtotal",
-    drinks: "Drinks & snacks",
-    drinksHelp: "Planned total cost − venue subtotal.",
+    drinks: "Additional drinks & snacks",
     totalCost: "Planned total cost",
+    totalMismatch: (amt) => `Doesn't match the event's total cost in Funds (${amt}).`,
     unreadable: (n) =>
       `${n} ${n === 1 ? "row has" : "rows have"} a blank or unreadable attendees note and ${n === 1 ? "isn't" : "aren't"} counted. See "Data problems".`,
   },

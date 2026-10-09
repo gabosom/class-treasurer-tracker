@@ -58,7 +58,7 @@ Part B of `docs/LOCAL_SETUP_PROMPT.md`.
 1. Part A of `docs/LOCAL_SETUP_PROMPT.md`: reader service account, folder shared as Viewer.
 2. Vercel: set `SHEET_ID`, `GOOGLE_READER_SA_JSON_B64`, `AUTH_SECRET`, `FAMILIES_CODE`, `DIRECTIVA_CODE`.
 3. Redeploy. The demo banner disappears, `/` asks for the class code, `/directiva` asks for the directiva code.
-4. Check that the Sheet's `Config` `schema_version` matches the app (currently **4**). If it doesn't,
+4. Check that the Sheet's `Config` `schema_version` matches the app (currently **5**). If it doesn't,
    the directiva view shows the error; ask the agent to update its skill and run `migrate`.
 5. Later: Google sign-in (Part B), then remove `DIRECTIVA_CODE`.
 

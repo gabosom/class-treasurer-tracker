@@ -142,7 +142,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
       status: f.fund.status,
       notes: f.fund.notes,
       costSet: f.costSet,
-      budget: computeEventBudget(f.fund, wb.participants, wb.defaultPrices),
+      budget: computeEventBudget(f.fund, wb.participants),
       priceCents: f.fund.priceCents,
       totalCostCents: f.fund.totalCostCents,
       expectedCents: f.expectedCents,

@@ -83,10 +83,9 @@ time someone opens it. Both views also have a **Refresh now** button.
 ```
 Tesorería Clase 2026-27/                 1_ZzQ8Cm2Tl3H8ek9fiF20weMa67uSIzH
 ├── Tesorería Clase 2026-27  (Sheet)     1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs  (empty; agent sets it up)
-├── Recibos/                             1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp
-│   ├── CLASS-1/                         1F05YnkQRstbGnmN9fE-eDs3VYJva9pLi
-│   └── <fund_id>/                       agent creates one per event
-└── Recibos por procesar/                1DcDo9cbqv1VT6Sn7FmspEpbaMkIvMt3c  NO LONGER USED; delete it
+└── Recibos/                             1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp
+    ├── CLASS-1/                         1F05YnkQRstbGnmN9fE-eDs3VYJva9pLi
+    └── <fund_id>/                       agent creates one per event
 ```
 Receipt files are named `YYYY-MM-DD_<fund_id>_<vendor>_<amount>.<ext>`,
 e.g. `2026-10-02_CLASS-1_costco_23.47.jpg`.
@@ -131,8 +130,9 @@ other tabs (formulas, reports); the app ignores them. Columns are listed in thei
 | 9 | venue_per_kid | `9.00` | optional, events: what the venue charges per child (schema 4) |
 | 10 | venue_per_adult | `3.00` | optional, events: venue charge per adult |
 | 11 | venue_flat_fee | `50.00` | optional, events: flat venue fees |
-| 12 | revenue_per_kid | `11.00` | optional: charged to families per kid; overrides `Config.price_per_kid` |
-| 13 | revenue_per_adult | `6.50` | optional: charged per adult; overrides `Config.price_per_adult` |
+| 12 | revenue_per_kid | `11.00` | optional, events: charged to families per kid |
+| 13 | revenue_per_adult | `6.50` | optional, events: charged per adult |
+| 14 | drinks_snacks | `109.00` | optional, events: additional drinks/snacks budget (schema 5) |
 
 - **Class fund**: you set `price_per_student`. Every active student owes it.
   Goal = price × active students (computed).
@@ -219,11 +219,10 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 ### `Config` — key/value
 | key | example | notes |
 |---|---|---|
-| schema_version | `4` | must match the skill's schema version (§9) |
+| schema_version | `5` | must match the skill's schema version (§9) |
 | school_year | `2026-27` | |
 | directiva_email | `gabosom@gmail.com` | one row per member; controls who can open `/directiva` |
 | receipts_folder_id | `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp` | |
-| price_per_kid / price_per_adult | `11` / `6.5` | optional: default event prices charged to families |
 
 ---
 
@@ -251,13 +250,14 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
 
 ---
 
-- **Event budget** (directiva, only when `venue_per_kid` is set), for the families in
+- **Event budget** (directiva, only when at least one breakdown column is set), for the families in
   `Participants`. That list is the source of truth: no row means not attending, and rows never
   have blanks (skill rule 12).
-  - revenue = kids × revenue_per_kid + adults × revenue_per_adult (the fund's value, or
-    `Config.price_per_*`)
+  - Each line shows only when its column is filled in. There are no default prices.
+  - revenue = kids × revenue_per_kid + adults × revenue_per_adult
   - venue subtotal = kids × venue_per_kid + adults × venue_per_adult + venue_flat_fee
-  - drinks/snacks = total_cost − venue subtotal, so venue subtotal + drinks/snacks = total_cost
+  - planned total cost = venue subtotal + drinks_snacks. If it differs from `total_cost` (the
+    event's goal), the card says so.
   - no surplus line: the budget doesn't plan for one
   - Kid/adult counts come from `attendees` ("2 adults, 1 kid" or "1 niño + 1 hermano + 2 adultos";
     siblings count as kids). A blank or unreadable note is left out of the headcount and flagged
@@ -451,7 +451,7 @@ Checks run on every read:
 | D12 | Directiva transactions | Latest 20 on the main page, full filterable history on `/directiva/movimientos` |
 | D13 | Directiva access | Shared `DIRECTIVA_CODE` for now (not every member has Google). Google sign-in later, once emails are gathered |
 | D14 | Funds without a cost | Still shown and counted in totals (their spending is real). The goal or total cost shows as "por definir" (to be determined), with no progress bar, plus a directiva warning |
-| D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card for the families in `Participants` only (no "max" scenario; no blank rows). Drinks/snacks = total_cost − venue subtotal. Event surpluses stay in events (D10 unchanged) |
+| D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card for the families in `Participants` only (no "max" scenario; no blank rows). Drinks/snacks is its own column (schema 5); planned total = venue subtotal + drinks_snacks, flagged if it differs from total_cost. No default prices in Config Event surpluses stay in events (D10 unchanged) |
 
 ## 15. Open questions
 

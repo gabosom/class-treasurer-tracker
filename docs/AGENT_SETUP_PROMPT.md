@@ -21,10 +21,7 @@ branch `main`.
    - the dropdowns and formats you applied
    - the seed rows written
    - anything you couldn't do
-4. **Delete** the empty folder "Recibos por procesar" (`1DcDo9cbqv1VT6Sn7FmspEpbaMkIvMt3c`)
-   inside "Tesorería Clase 2026-27". It isn't used. Only delete it if it's empty; if it isn't,
-   tell me what's in it.
-5. Tell me your installed `skill_version` and the Sheet's `schema_version`.
+4. Tell me your installed `skill_version` and the Sheet's `schema_version`.
 
 **Then stop and wait.** Next I'll send you the class roster (operation `load_roster`), the class
 fund price (`set_class_price`), and two receipts: the sunblock I paid for and the soccer ball

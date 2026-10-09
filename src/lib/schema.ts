@@ -1,6 +1,6 @@
 // Sheet schema. Must match agent/class-treasurer/SKILL.md §3 for the same schema_version.
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export const TABS = {
   Roster: [
@@ -30,6 +30,8 @@ export const TABS = {
     "venue_flat_fee",
     "revenue_per_kid",
     "revenue_per_adult",
+    // schema 5
+    "drinks_snacks",
   ],
   Participants: ["fund_id", "student_id", "amount_due", "attendees"],
   Ledger: [
@@ -97,12 +99,14 @@ export interface Fund {
   date: string | null;
   status: FundStatus;
   notes: string;
-  /** Optional event cost breakdown (schema 4). null = blank. */
+  /** Optional event cost breakdown (schema 4–5). null = blank. */
   venuePerKidCents: number | null;
   venuePerAdultCents: number | null;
   venueFlatFeeCents: number | null;
   revenuePerKidCents: number | null;
   revenuePerAdultCents: number | null;
+  /** schema 5: additional drinks/snacks budget */
+  drinksSnacksCents: number | null;
   row: number;
 }
 
@@ -147,8 +151,6 @@ export interface Workbook {
   participants: Participant[];
   txns: Txn[];
   directivaEmails: string[];
-  /** Config.price_per_kid / price_per_adult: defaults when a fund's revenue_per_* is blank */
-  defaultPrices: { perKidCents: number | null; perAdultCents: number | null };
   issues: Issue[];
 }
 

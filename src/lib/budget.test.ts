@@ -18,7 +18,7 @@ describe("parseAttendees", () => {
   });
 });
 
-// The real Flip Zone participants as of 2026-10-08, with example venue prices.
+// The real Flip Zone participants and prices as of 2026-10-08.
 const real: [string, string][] = [
   ["S04", "2 adults, 1 kid"], ["S05", "2 adults, 1 kid"], ["S06", "2 adults, 1 kid"],
   ["S08", "2 adults, 2 kids"], ["S09", "2 adults, 2 kids"], ["S10", "2 adults, 2 kids"],
@@ -35,41 +35,52 @@ const participants: Participant[] = real.map(([studentId, attendees], i) => ({
 const fund: Fund = {
   id: "EV-FLIP", name: "Flip Zone", type: "event", priceCents: null, totalCostCents: 66000,
   date: "2026-10-18", status: "collecting", notes: "",
-  venuePerKidCents: 900, venuePerAdultCents: 300, venueFlatFeeCents: 5000,
-  revenuePerKidCents: null, revenuePerAdultCents: null, row: 2,
+  venuePerKidCents: 1050, venuePerAdultCents: 300, venueFlatFeeCents: 3500,
+  revenuePerKidCents: 1100, revenuePerAdultCents: 650, drinksSnacksCents: 10900, row: 2,
 };
-const defaults = { perKidCents: 1100, perAdultCents: 650 }; // Config.price_per_kid / price_per_adult
+const blank = {
+  venuePerKidCents: null, venuePerAdultCents: null, venueFlatFeeCents: null,
+  revenuePerKidCents: null, revenuePerAdultCents: null, drinksSnacksCents: null,
+};
 
 describe("computeEventBudget", () => {
-  const b = computeEventBudget(fund, participants, defaults)!;
+  const b = computeEventBudget(fund, participants)!;
 
   it("counts only families in Participants: 22 families, 36 kids, 46 adults", () => {
     expect(b.confirmed).toMatchObject({ families: 22, kids: 36, adults: 46 });
     expect(b.confirmed.revenueCents).toBe(36 * 1100 + 46 * 650); // $695, matches Σ amount_due in the Sheet
-    expect(b.confirmed.venueSubtotalCents).toBe(36 * 900 + 46 * 300 + 5000); // $512
-    expect(b.confirmed.drinksCents).toBe(66000 - 51200); // total_cost − venue subtotal = $148
+    expect(b.confirmed.venueSubtotalCents).toBe(36 * 1050 + 46 * 300 + 3500); // $551
+    expect(b.confirmed.drinksCents).toBe(10900);
+    expect(b.confirmed.totalCostCents).toBe(55100 + 10900); // venue subtotal + drinks = $660 = total_cost
+    expect(b.fundTotalCostCents).toBe(66000);
     expect(b.unreadableRows).toBe(0);
   });
 
-  it("fund revenue_per_* overrides Config defaults", () => {
-    const b2 = computeEventBudget({ ...fund, revenuePerKidCents: 1500 }, participants, defaults)!;
-    expect(b2.revenuePerKidCents).toBe(1500);
-    expect(b2.revenuePerAdultCents).toBe(650);
+  it("a blank column hides its line, and totals add up only what's set", () => {
+    const c = computeEventBudget({ ...fund, revenuePerAdultCents: null, venueFlatFeeCents: null, drinksSnacksCents: null }, participants)!.confirmed;
+    expect(c.revenueAdultsCents).toBeNull();
+    expect(c.revenueCents).toBe(36 * 1100);
+    expect(c.venueFlatFeeCents).toBeNull();
+    expect(c.venueSubtotalCents).toBe(36 * 1050 + 46 * 300);
+    expect(c.drinksCents).toBeNull();
+    expect(c.totalCostCents).toBe(c.venueSubtotalCents);
+  });
+
+  it("no revenue columns: revenue total is null (no Config defaults)", () => {
+    const c = computeEventBudget({ ...fund, revenuePerKidCents: null, revenuePerAdultCents: null }, participants)!.confirmed;
+    expect(c.revenueCents).toBeNull();
   });
 
   it("a blank or unreadable attendees note is left out and reported", () => {
     const p2 = [...participants, { fundId: "EV-FLIP", studentId: "S01", amountDueCents: null, attendees: "", row: 99 }];
-    const b2 = computeEventBudget(fund, p2, defaults)!;
+    const b2 = computeEventBudget(fund, p2)!;
     expect(b2.confirmed.families).toBe(22);
     expect(b2.unreadableRows).toBe(1);
   });
 
-  it("only applies to events with venue_per_kid", () => {
-    expect(computeEventBudget({ ...fund, venuePerKidCents: null }, participants, defaults)).toBeNull();
-  });
-
-  it("drinks is null when total_cost isn't set", () => {
-    const c = computeEventBudget({ ...fund, totalCostCents: null }, participants, defaults)!.confirmed;
-    expect(c.drinksCents).toBeNull();
+  it("only applies to events with at least one breakdown column", () => {
+    expect(computeEventBudget({ ...fund, ...blank }, participants)).toBeNull();
+    expect(computeEventBudget({ ...fund, ...blank, drinksSnacksCents: 5000 }, participants)).not.toBeNull();
+    expect(computeEventBudget({ ...fund, type: "class" }, participants)).toBeNull();
   });
 });

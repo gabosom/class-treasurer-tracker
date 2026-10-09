@@ -1,4 +1,4 @@
-import { type RawWorkbook, TABS } from "@/lib/schema";
+import { type RawWorkbook, SCHEMA_VERSION, TABS } from "@/lib/schema";
 
 // Small fictional workbook for unit tests (demo mode uses fixtures/demo.ts).
 // Covers: class fund, a paid-by-another-parent expense with partial payback,
@@ -49,7 +49,7 @@ export const sampleWorkbook: RawWorkbook = {
   ],
   Config: [
     [...TABS.Config],
-    ["schema_version", "4"],
+    ["schema_version", String(SCHEMA_VERSION)],
     ["school_year", "2026-27"],
     ["directiva_email", "gabosom@gmail.com"],
     ["receipts_folder_id", "1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp"],

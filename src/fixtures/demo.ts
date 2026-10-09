@@ -1,4 +1,5 @@
-import { type Cell, type RawWorkbook, TABS } from "@/lib/schema";
+import { parseAttendees } from "@/lib/budget";
+import { type Cell, type RawWorkbook, SCHEMA_VERSION, TABS } from "@/lib/schema";
 
 // Fictional class used when SHEET_ID isn't set (demo mode). Every name is made up.
 // Sized like a real class so the dashboards can be reviewed before the Sheet is connected.
@@ -88,6 +89,9 @@ ledger.push(txn("2026-10-05", "EV-2026-10-FLIP-ZONE", "contribution", 20, "S10",
 ledger.push(txn("2026-10-07", "EV-2026-10-FLIP-ZONE", "expense", 100, "", "Flip Zone", "Silvana Mendoza", "other", "", "demo-deposit", "Depósito reserva local", "", ""));
 
 const flipTotal = flip.reduce((a, [, amt]) => a + amt, 0);
+// Venue: $12/kid, $5/adult, $40 flat; drinks/snacks take the rest of the total.
+const flipCount = flip.map(([, , who]) => parseAttendees(who)!).reduce((a, h) => ({ kids: a.kids + h.kids, adults: a.adults + h.adults }));
+const flipDrinks = flipTotal - (flipCount.kids * 12 + flipCount.adults * 5 + 40);
 
 // Upcoming outing whose total isn't set yet: shown with "por definir", deposit still counted.
 ledger.push(txn("2026-10-08", "EV-2026-11-MUSEO", "expense", 25, "", "Museo Interactivo", "treasurer", "card", "", "demo-museo", "Reserva museo", "", ""));
@@ -99,7 +103,7 @@ export const demoWorkbook: RawWorkbook = {
     ["CLASS-1", "Fondo de clase 2026-27", "class", 40, "", "", "collecting", "Protector solar, balones, materiales y refrigerios compartidos durante el año."],
     ["EV-2026-09-HUERTO", "Huerto de calabazas", "event", "", 120, "2026-09-27", "closed", "Entrada $13.50 por niño + 10%. 8 niños."],
     ["EV-2026-11-MUSEO", "Paseo 2 - Museo", "event", "", "", "2026-11-20", "collecting", "Costo total por definir; depende de cuántas familias se apunten."],
-    ["EV-2026-10-FLIP-ZONE", "Paseo 1 - Flip Zone", "event", "", flipTotal, "2026-10-18", "collecting", `Niño o hermano $20, adulto $15 (entrada + medias antideslizantes, incl. 10%). Total $${flipTotal}.`, 12, 5, 40, 20, 15],
+    ["EV-2026-10-FLIP-ZONE", "Paseo 1 - Flip Zone", "event", "", flipTotal, "2026-10-18", "collecting", `Niño o hermano $20, adulto $15 (entrada + medias antideslizantes, incl. 10%). Total $${flipTotal}.`, 12, 5, 40, 20, 15, flipDrinks],
   ],
   Participants: [
     [...TABS.Participants],
@@ -110,7 +114,7 @@ export const demoWorkbook: RawWorkbook = {
   Ledger: [[...TABS.Ledger], ...ledger],
   Config: [
     [...TABS.Config],
-    ["schema_version", "4"],
+    ["schema_version", String(SCHEMA_VERSION)],
     ["school_year", "2026-27"],
     ["directiva_email", "demo@example.com"],
   ],

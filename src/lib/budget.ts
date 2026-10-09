@@ -1,6 +1,6 @@
 import type { Fund, Participant } from "./schema";
 
-// Event budget (docs/DESIGN.md §5, "Event budget"). Only for events with venue_per_kid set.
+// Event budget (docs/DESIGN.md §5, "Event budget"). Only for events with at least one breakdown column set.
 
 export interface Headcount {
   kids: number;
@@ -33,35 +33,45 @@ export interface BudgetScenario {
   families: number;
   kids: number;
   adults: number;
-  venueKidsCents: number;
-  venueAdultsCents: number;
-  venueFlatFeeCents: number;
-  venueSubtotalCents: number;
-  revenueKidsCents: number;
-  revenueAdultsCents: number;
-  revenueCents: number;
-  /** Drinks/snacks budget: total_cost − venue subtotal (null if total_cost isn't set) */
+  /** Each line is null when its Funds column is blank; the card hides it. */
+  venueKidsCents: number | null;
+  venueAdultsCents: number | null;
+  venueFlatFeeCents: number | null;
+  /** null when every venue column is blank */
+  venueSubtotalCents: number | null;
+  revenueKidsCents: number | null;
+  revenueAdultsCents: number | null;
+  /** null when both revenue columns are blank */
+  revenueCents: number | null;
+  /** Funds.drinks_snacks: additional drinks/snacks budget */
   drinksCents: number | null;
+  /** Planned total = venue subtotal + drinks/snacks; null when there are no cost lines */
+  totalCostCents: number | null;
 }
 
 export interface EventBudget {
-  totalCostCents: number | null;
-  venuePerKidCents: number;
-  venuePerAdultCents: number;
-  revenuePerKidCents: number;
-  revenuePerAdultCents: number;
+  /** Funds.total_cost, the event's goal; may differ from the budget's planned total */
+  fundTotalCostCents: number | null;
+  venuePerKidCents: number | null;
+  venuePerAdultCents: number | null;
+  revenuePerKidCents: number | null;
+  revenuePerAdultCents: number | null;
   /** Families in Participants (the source of truth: no row means not attending) */
   confirmed: BudgetScenario;
   /** Participants rows whose attendees note is blank or unreadable; left out of the headcount */
   unreadableRows: number;
 }
 
-export function computeEventBudget(
-  fund: Fund,
-  participants: Participant[],
-  defaults: { perKidCents: number | null; perAdultCents: number | null },
-): EventBudget | null {
-  if (fund.type !== "event" || fund.venuePerKidCents === null) return null;
+const times = (n: number, cents: number | null) => (cents === null ? null : n * cents);
+/** Sum of the non-null values, or null if all are null. */
+const sum = (...xs: (number | null)[]) =>
+  xs.every((x) => x === null) ? null : xs.reduce<number>((a, x) => a + (x ?? 0), 0);
+
+export function computeEventBudget(fund: Fund, participants: Participant[]): EventBudget | null {
+  const { venuePerKidCents, venuePerAdultCents, venueFlatFeeCents, revenuePerKidCents, revenuePerAdultCents, drinksSnacksCents } = fund;
+  if (fund.type !== "event") return null;
+  if ([venuePerKidCents, venuePerAdultCents, venueFlatFeeCents, revenuePerKidCents, revenuePerAdultCents, drinksSnacksCents].every((v) => v === null))
+    return null;
 
   const counts: Headcount[] = [];
   let unreadableRows = 0;
@@ -70,24 +80,19 @@ export function computeEventBudget(
     if (h) counts.push(h);
     else unreadableRows++;
   }
-
-  const revenuePerKidCents = fund.revenuePerKidCents ?? defaults.perKidCents ?? 0;
-  const revenuePerAdultCents = fund.revenuePerAdultCents ?? defaults.perAdultCents ?? 0;
   const kids = counts.reduce((a, h) => a + h.kids, 0);
   const adults = counts.reduce((a, h) => a + h.adults, 0);
 
-  const venueKidsCents = kids * fund.venuePerKidCents;
-  const venueAdultsCents = adults * (fund.venuePerAdultCents ?? 0);
-  const venueFlatFeeCents = fund.venueFlatFeeCents ?? 0;
-  const venueSubtotalCents = venueKidsCents + venueAdultsCents + venueFlatFeeCents;
-  const revenueKidsCents = kids * revenuePerKidCents;
-  const revenueAdultsCents = adults * revenuePerAdultCents;
-  const revenueCents = revenueKidsCents + revenueAdultsCents;
+  const venueKidsCents = times(kids, venuePerKidCents);
+  const venueAdultsCents = times(adults, venuePerAdultCents);
+  const venueSubtotalCents = sum(venueKidsCents, venueAdultsCents, venueFlatFeeCents);
+  const revenueKidsCents = times(kids, revenuePerKidCents);
+  const revenueAdultsCents = times(adults, revenuePerAdultCents);
 
   return {
-    totalCostCents: fund.totalCostCents,
-    venuePerKidCents: fund.venuePerKidCents,
-    venuePerAdultCents: fund.venuePerAdultCents ?? 0,
+    fundTotalCostCents: fund.totalCostCents,
+    venuePerKidCents,
+    venuePerAdultCents,
     revenuePerKidCents,
     revenuePerAdultCents,
     confirmed: {
@@ -100,8 +105,9 @@ export function computeEventBudget(
       venueSubtotalCents,
       revenueKidsCents,
       revenueAdultsCents,
-      revenueCents,
-      drinksCents: fund.totalCostCents === null ? null : fund.totalCostCents - venueSubtotalCents,
+      revenueCents: sum(revenueKidsCents, revenueAdultsCents),
+      drinksCents: drinksSnacksCents,
+      totalCostCents: sum(venueSubtotalCents, drinksSnacksCents),
     },
     unreadableRows,
   };

@@ -5,8 +5,8 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.3.2**
-- **schema_version: 4**
+- **skill_version: 1.4.0**
+- **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
 
@@ -26,14 +26,11 @@ so **accuracy matters more than speed**: when unsure, ask.
 | Folder "Recibos" | `1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp` |
 | Folder "Recibos/CLASS-1" | `1F05YnkQRstbGnmN9fE-eDs3VYJva9pLi` |
 
-There's also a folder "Recibos por procesar" (`1DcDo9cbqv1VT6Sn7FmspEpbaMkIvMt3c`). It isn't used;
-ignore it.
-
 ---
 
 ## 2. Rules (always)
 
-1. **Pre-flight before any write.** Read `Config` and check `schema_version` = `4`, then read
+1. **Pre-flight before any write.** Read `Config` and check `schema_version` = `5`, then read
    the header row of every tab you'll touch and check it matches §3 exactly. If either is off,
    **stop**, write nothing, and tell the treasurer. (Exceptions: `setup` and `migrate`.)
 2. **Stay inside the parent folder.** Never read, create, move, share or delete anything outside it.
@@ -64,7 +61,7 @@ ignore it.
 
 ---
 
-## 3. Sheet schema (schema_version 4)
+## 3. Sheet schema (schema_version 5)
 
 Headers in row 1, in this exact order. Tabs not listed here belong to the treasurer: never
 modify them.
@@ -73,19 +70,22 @@ modify them.
 `student_id, student_name, mom_name, mom_phone, mom_email, dad_name, dad_phone, dad_email, payment_aliases, active`
 
 **`Funds`**
-`fund_id, name, type, price_per_student, total_cost, date, status, notes, venue_per_kid, venue_per_adult, venue_flat_fee, revenue_per_kid, revenue_per_adult`
+`fund_id, name, type, price_per_student, total_cost, date, status, notes, venue_per_kid, venue_per_adult, venue_flat_fee, revenue_per_kid, revenue_per_adult, drinks_snacks`
 
-The last 5 columns are **optional** and only for events (leave them blank for the class fund):
+The last 6 columns are **optional** and only for events (leave them blank for the class fund):
 | column | what it is |
 |---|---|
 | `venue_per_kid` | what the venue charges per child |
 | `venue_per_adult` | what the venue charges per adult |
 | `venue_flat_fee` | flat venue fees (e.g. a fee for bringing our own drinks) |
-| `revenue_per_kid` | what we charge families per kid; overrides `Config.price_per_kid` if set |
-| `revenue_per_adult` | what we charge families per adult; overrides `Config.price_per_adult` if set |
+| `revenue_per_kid` | what we charge families per kid |
+| `revenue_per_adult` | what we charge families per adult |
+| `drinks_snacks` | additional budget for drinks and snacks, beyond the venue |
 
-When `venue_per_kid` is set, the dashboard shows a budget for the event (revenue, venue costs,
-drinks/snacks budget) for the families in `Participants`. It counts kids
+There are no default prices: a blank column means "doesn't apply" and the dashboard hides that
+line. When any of these columns is set, the dashboard shows a budget for the event (revenue,
+venue costs, drinks/snacks, planned total = venue subtotal + `drinks_snacks`) for the families in
+`Participants`, and flags it if the planned total differs from `total_cost`. It counts kids
 and adults from `Participants.attendees`, so keep that note in a readable form like
 `2 adultos + 1 niño` or `2 adults, 1 kid` (siblings count as kids).
 
@@ -100,8 +100,8 @@ and adults from `Participants.attendees`, so keep that note in a readable form l
 `txn_id, date, fund_id, type, amount, student_id, payee, paid_by, method, payment_ref, receipt_file_id, public_desc, private_notes, reimburses_txn`
 
 **`Config`**
-`key, value`. Optional keys `price_per_kid` and `price_per_adult` hold the default per-person
-prices charged to families for events; a fund's `revenue_per_kid` / `revenue_per_adult` override them.
+`key, value`. Keys: `schema_version`, `school_year`, `directiva_email` (one row per member),
+`receipts_folder_id`.
 
 ### Value formats
 | Field | Format |
@@ -161,12 +161,12 @@ duplicate data rows.
 5. Formats for rows 2–2000:
    - currency USD: `Funds.price_per_student`, `Funds.total_cost`, `Funds.venue_per_kid`,
      `Funds.venue_per_adult`, `Funds.venue_flat_fee`, `Funds.revenue_per_kid`,
-     `Funds.revenue_per_adult`, `Ledger.amount`, `Participants.amount_due`
+     `Funds.revenue_per_adult`, `Funds.drinks_snacks`, `Ledger.amount`, `Participants.amount_due`
    - date `yyyy-mm-dd`: `Funds.date`, `Ledger.date`
    - plain text: every `*_id` column, `mom_phone`, `dad_phone`, `payment_ref`, `reimburses_txn`
 6. Seed rows, only if no row with that key exists:
    - `Funds`: `CLASS-1` | `Fondo de clase 2026-27` | `class` | (blank) | (blank) | (blank) | `collecting` | (blank)
-   - `Config`: `schema_version`=`4`, `school_year`=`2026-27`, `directiva_email`=`gabosom@gmail.com`,
+   - `Config`: `schema_version`=`5`, `school_year`=`2026-27`, `directiva_email`=`gabosom@gmail.com`,
      `receipts_folder_id`=`1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp`
 7. Report what you created or changed, and anything you skipped and why.
 
@@ -242,9 +242,10 @@ attending family, who's coming** (the student, siblings, adults).
    `total_cost` = the total. `notes` = the breakdown and per-person prices in Spanish, with no names, e.g.
    "Entrada niño $15, adulto $10; bus $120 repartido. Total $660 (incl. 10%)."
    **If the treasurer gives the venue's cost breakdown**, also fill in the structured columns:
-   `venue_per_kid`, `venue_per_adult`, `venue_flat_fee`, and `revenue_per_kid` /
-   `revenue_per_adult` when the prices charged to families differ from `Config.price_per_kid` /
-   `price_per_adult`. Leave a column blank if it doesn't apply; never guess a venue price.
+   `venue_per_kid`, `venue_per_adult`, `venue_flat_fee`, `revenue_per_kid`, `revenue_per_adult`
+   and `drinks_snacks`. Leave a column blank if it doesn't apply; never guess a price. If the
+   treasurer says the rest of the total goes to drinks/snacks, `drinks_snacks` = `total_cost` −
+   venue subtotal (kids × venue_per_kid + adults × venue_per_adult + venue_flat_fee).
 4. Append one `Participants` row per **confirmed** family: `amount_due`, plus `attendees` like
    `1 niño + 2 adultos`. Families who haven't confirmed (or left the headcount blank) get no row (rule 12).
 5. Create the folder `Recibos/<fund_id>/`.

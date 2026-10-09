@@ -177,6 +177,7 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
       venueFlatFeeCents: optMoney(10, "venue_flat_fee"),
       revenuePerKidCents: optMoney(11, "revenue_per_kid"),
       revenuePerAdultCents: optMoney(12, "revenue_per_adult"),
+      drinksSnacksCents: optMoney(13, "drinks_snacks"),
       row,
     };
     funds.push(fund);
@@ -286,11 +287,5 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     return true;
   });
 
-  const configMoney = (key: string) => {
-    const v = toCents(config.get(key)?.[0] ?? "");
-    return v === null || Number.isNaN(v) || v < 0 ? null : v;
-  };
-  const defaultPrices = { perKidCents: configMoney("price_per_kid"), perAdultCents: configMoney("price_per_adult") };
-
-  return { students, funds, participants, txns, directivaEmails, defaultPrices, issues };
+  return { students, funds, participants, txns, directivaEmails, issues };
 }
