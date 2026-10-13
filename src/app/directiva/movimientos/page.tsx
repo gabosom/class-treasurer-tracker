@@ -24,7 +24,7 @@ export default async function AllTransactionsPage({
 
   return (
     <>
-      <Header t={t} lang={lang} fetchedAt={snapshot?.fetchedAt} active="directiva" showNav />
+      <Header t={t} lang={lang} fetchedAt={snapshot?.fetchedAt} active="details" showNav />
       <main className="mx-auto max-w-5xl space-y-4 px-4 py-6">
         <Link href="/directiva" className="text-sm text-accent underline underline-offset-2">
           ← {t.backToDirectiva}

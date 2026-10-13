@@ -12,14 +12,15 @@ Ledger and dashboards for the LaCross 1A class treasury (school year 2026-27).
 
 | Page | Who | How they get in |
 |---|---|---|
-| `/` Families view | every family in the class | shared **class code** (`FAMILIES_CODE`), remembered 6 months |
-| `/directiva` Leadership view | directiva members | shared **directiva code** (`DIRECTIVA_CODE`), remembered 30 days, and/or **Google sign-in** for emails in the Sheet's `Config` tab |
-| `/directiva/movimientos` Full transaction history | directiva | same as `/directiva` |
-| `/api/receipt/<id>` Receipt images | directiva only | same as `/directiva`; only files referenced in the Ledger |
+| `/` **Resumen** (simple view: totals, events, expenses) | directiva | shared **directiva code** (`DIRECTIVA_CODE`), remembered 30 days, and/or **Google sign-in** for emails in the Sheet's `Config` tab |
+| `/directiva` **Detalles** (per-family status, reimbursements, budgets, transactions) | directiva | same login |
+| `/directiva/movimientos` Full transaction history | directiva | same login |
+| `/api/receipt/<id>` Receipt images | directiva | same login; only files referenced in the Ledger |
 
-Anyone with directiva access can also open the families view. Changing a code logs everyone out
-of that page. The directiva code must be different from the families code; if they're the same,
-directiva code sign-in is disabled.
+**For now there is no families/public view** (decision D16): both tabs are for the directiva, and
+anyone not signed in is sent to the directiva sign-in. The families-code mechanism is still in the
+code, but nothing uses it, so `FAMILIES_CODE` can be left unset. Changing the directiva code logs
+everyone out.
 
 **Demo mode:** if `SHEET_ID` isn't set, the app shows a fictional class (`src/fixtures/demo.ts`)
 with a "Modo demo" banner and **no sign-in at all**. Real data only loads when `SHEET_ID` is set,
@@ -37,8 +38,8 @@ use preview deploys). Redeploy after changing them.
 | `SHEET_ID` | `1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs` | The Google Sheet with the books. **Leave unset for demo mode.** |
 | `GOOGLE_READER_SA_JSON_B64` | *(long base64 string)* | The `treasurer-reader` service account key, base64-encoded: `base64 -i reader-sa.json \| tr -d '\n'`. Read-only access to the Sheet and receipts. Created in Part A of `docs/LOCAL_SETUP_PROMPT.md`. |
 | `AUTH_SECRET` | *(random)* | Signs the login cookies. Generate with `openssl rand -base64 32`. Changing it logs everyone out. |
-| `FAMILIES_CODE` | `lacross1a` | Class code you share with all families. Not case-sensitive. |
-| `DIRECTIVA_CODE` | *(different word)* | Code you share only with directiva members. Not case-sensitive, and must differ from `FAMILIES_CODE`. Remove it once everyone uses Google sign-in. |
+| `DIRECTIVA_CODE` | *(hard to guess)* | Code you share with directiva members; opens both tabs. Not case-sensitive. Remove it once everyone uses Google sign-in. |
+| `FAMILIES_CODE` | *(leave unset)* | Not used for now (no families view, D16). If set, it must differ from `DIRECTIVA_CODE`. |
 
 ### Optional: Google sign-in for directiva (later)
 
@@ -56,8 +57,8 @@ Part B of `docs/LOCAL_SETUP_PROMPT.md`.
 ### Going live checklist
 
 1. Part A of `docs/LOCAL_SETUP_PROMPT.md`: reader service account, folder shared as Viewer.
-2. Vercel: set `SHEET_ID`, `GOOGLE_READER_SA_JSON_B64`, `AUTH_SECRET`, `FAMILIES_CODE`, `DIRECTIVA_CODE`.
-3. Redeploy. The demo banner disappears, `/` asks for the class code, `/directiva` asks for the directiva code.
+2. Vercel: set `SHEET_ID`, `GOOGLE_READER_SA_JSON_B64`, `AUTH_SECRET`, `DIRECTIVA_CODE`.
+3. Redeploy. The demo banner disappears and both tabs ask for the directiva code.
 4. Check that the Sheet's `Config` `schema_version` matches the app (currently **5**). If it doesn't,
    the directiva view shows the error; ask the agent to update its skill and run `migrate`.
 5. Later: Google sign-in (Part B), then remove `DIRECTIVA_CODE`.

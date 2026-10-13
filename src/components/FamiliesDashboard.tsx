@@ -124,7 +124,7 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
         )}
         <p className="mt-3 text-xs text-ink-3">
           {v.expenses.length > MAX_EXPENSES && <>{t.latestExpenses(MAX_EXPENSES, v.expenses.length)} </>}
-          {t.expensesContact}
+          {v.expenses.length > MAX_EXPENSES && t.seeDetails}
         </p>
       </Card>
     </div>

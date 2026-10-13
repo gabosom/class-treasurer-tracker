@@ -3,7 +3,7 @@
 import { updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { COOKIE, COOKIE_MAX_AGE, codeMatches, codeToken, hasFamiliesAccess } from "@/lib/auth";
+import { COOKIE, COOKIE_MAX_AGE, codeMatches, codeToken, directivaAccess } from "@/lib/auth";
 import { SHEET_TAG } from "@/lib/data";
 import { LANG_COOKIE, toLang } from "@/lib/i18n";
 
@@ -12,7 +12,7 @@ export async function setLanguage(lang: string) {
 }
 
 export async function refreshData() {
-  if (!(await hasFamiliesAccess())) return;
+  if ((await directivaAccess()).state !== "allowed") return;
   updateTag(SHEET_TAG); // next read fetches the Sheet again
 }
 
@@ -36,7 +36,7 @@ export async function enterFamiliesCode(_prev: { error: boolean }, form: FormDat
 }
 
 export async function enterDirectivaCode(_prev: { error: boolean }, form: FormData) {
-  return enter("directiva", form, "/directiva");
+  return enter("directiva", form, "/");
 }
 
 /** Clears the directiva code cookie. Google sessions are signed out client-side by next-auth. */
