@@ -44,7 +44,7 @@ export default async function DirectivaPage() {
   const { snapshot, error } = await getSnapshot();
   return (
     <>
-      <Header t={t} lang={lang} fetchedAt={snapshot?.fetchedAt} active="details" showNav />
+      <Header t={t} lang={lang} fetchedAt={snapshot?.fetchedAt} active="directiva" showNav />
       <main className="mx-auto max-w-5xl space-y-4 px-4 py-6">
         {error && (
           <Notice kind="error">

@@ -452,7 +452,7 @@ Checks run on every read:
 | D13 | Directiva access | Shared `DIRECTIVA_CODE` for now (not every member has Google). Google sign-in later, once emails are gathered |
 | D14 | Funds without a cost | Still shown and counted in totals (their spending is real). The goal or total cost shows as "por definir" (to be determined), with no progress bar, plus a directiva warning |
 | D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card for the families in `Participants` only (no "max" scenario; no blank rows). Drinks/snacks is its own column (schema 5); planned total = venue subtotal + drinks_snacks, flagged if it differs from total_cost. No default prices in Config Event surpluses stay in events (D10 unchanged) |
-| D16 | Views | No families/public view for now. Two directiva-only tabs: **Resumen** (`/`, the simple view: totals, events, expenses) and **Detalles** (`/directiva`, the detailed view). One login (directiva code or Google) opens both; the families code is unused |
+| D16 | Views | No families/public view for now. Two directiva-only tabs: **Directiva** (`/directiva`, the default; `/` redirects there) and **Reportes** (`/reportes`, the simple view the treasurer screenshots for the class group chat). In Directiva, a student's status links to the receipts of their contributions to that fund (several installments → (1) (2) …). One login (directiva code or Google) opens both; the families code is unused |
 
 ## 15. Open questions
 

@@ -13,7 +13,7 @@ export function Header({
   t: Dict;
   lang: Lang;
   fetchedAt?: string;
-  active?: "summary" | "details";
+  active?: "directiva" | "reports";
   showNav?: boolean;
 }) {
   const updated = fetchedAt
@@ -46,8 +46,8 @@ export function Header({
         <div className="flex flex-wrap items-center gap-2">
           {showNav && (
             <nav className="flex gap-1">
-              {link("/", t.navSummary, active === "summary")}
-              {link("/directiva", t.navDetails, active === "details")}
+              {link("/directiva", t.navDirectiva, active === "directiva")}
+              {link("/reportes", t.navReports, active === "reports")}
             </nav>
           )}
           <LanguageSelect lang={lang} label={t.language} />

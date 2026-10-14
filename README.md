@@ -12,8 +12,8 @@ Ledger and dashboards for the LaCross 1A class treasury (school year 2026-27).
 
 | Page | Who | How they get in |
 |---|---|---|
-| `/` **Resumen** (simple view: totals, events, expenses) | directiva | shared **directiva code** (`DIRECTIVA_CODE`), remembered 30 days, and/or **Google sign-in** for emails in the Sheet's `Config` tab |
-| `/directiva` **Detalles** (per-family status, reimbursements, budgets, transactions) | directiva | same login |
+| `/directiva` **Directiva** (default tab; `/` redirects here): per-family status with receipt links, reimbursements, budgets, transactions | directiva | shared **directiva code** (`DIRECTIVA_CODE`), remembered 30 days, and/or **Google sign-in** for emails in the Sheet's `Config` tab |
+| `/reportes` **Reportes** (simple view to screenshot for the class group chat: totals, events, expenses) | directiva | same login |
 | `/directiva/movimientos` Full transaction history | directiva | same login |
 | `/api/receipt/<id>` Receipt images | directiva | same login; only files referenced in the Ledger |
 

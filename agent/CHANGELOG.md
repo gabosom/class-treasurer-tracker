@@ -8,7 +8,7 @@ changes, the entry includes **Migration** steps that the agent's `migrate` opera
   `YYYY-MM-DD_<fund_id>_<txn_id>.<ext>` and set `receipt_file_id` to its Drive ID. If the upload
   fails, the row is still written, with `receipt_file_id` blank, and the treasurer is told.
 - Column table: `receipt_file_id` moved from "leave blank" to "optional" for `contribution`.
-- No dashboard change needed: contribution receipts already show as links in Detalles (directiva only).
+- No dashboard change needed: contribution receipts show as links on the student's status in the Directiva tab.
 
 ## 1.4.2 — 2026-10-14 — schema 5 (no migration)
 - Rule 13 rewritten: `gog sheets append` is broken (it writes down column A). Never use it. Write

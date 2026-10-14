@@ -46,6 +46,21 @@ describe("directiva view", () => {
     });
     expect(d.pending[0].name).toBe("Ana Gómez");
   });
+
+  it("links each student's contribution receipts per fund, oldest first", () => {
+    const raw = structuredClone(sampleWorkbook);
+    const ledger = raw.Ledger!;
+    const row = (id: string) => ledger.find((r) => r[0] === id)!;
+    row("T0003")[10] = "rcpt-a"; // S03 CLASS-1, 2026-10-02
+    ledger.push(["T0099", "2026-10-03", "CLASS-1", "contribution", 20, "S03", "", "", "cash", "", "rcpt-b", "", "", ""]);
+    row("T0014")[10] = "rcpt-zoo"; // S01 ZOO
+    const wb = parseWorkbook(raw);
+    const d = buildDirectivaView(wb, computeLedger(wb));
+    const line = (fund: string, s: string) => d.funds.find((f) => f.id === fund)!.lines.find((l) => l.studentId === s)!;
+    expect(line("CLASS-1", "S03").receiptIds).toEqual(["rcpt-a", "rcpt-b"]);
+    expect(line("EV-2026-11-ZOO", "S01").receiptIds).toEqual(["rcpt-zoo"]);
+    expect(line("CLASS-1", "S01").receiptIds).toEqual([]);
+  });
 });
 
 describe("demo workbook", () => {

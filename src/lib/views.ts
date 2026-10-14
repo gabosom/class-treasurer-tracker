@@ -122,6 +122,8 @@ export interface DirectivaView {
       dueCents: number | null;
       paidCents: number;
       status: StudentStatus;
+      /** Receipt file IDs of this student's contributions to this fund, oldest first */
+      receiptIds: string[];
     }[];
   }[];
   txns: (Txn & { fundName: string })[];
@@ -130,6 +132,12 @@ export interface DirectivaView {
 
 export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
   const fundName = new Map(wb.funds.map((f) => [f.id, f.name]));
+  const receipts = new Map<string, string[]>();
+  for (const t of [...wb.txns].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))) {
+    if (t.type !== "contribution" || !t.receiptFileId) continue;
+    const k = `${t.fundId}|${t.studentId}`;
+    receipts.set(k, [...(receipts.get(k) ?? []), t.receiptFileId]);
+  }
   return {
     families: buildFamiliesView(wb, l),
     treasurerCashCents: l.treasurerCashCents,
@@ -159,6 +167,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
         dueCents: x.dueCents,
         paidCents: x.paidCents,
         status: x.status,
+        receiptIds: receipts.get(`${f.fund.id}|${x.student.id}`) ?? [],
       })),
     })),
     txns: [...wb.txns]

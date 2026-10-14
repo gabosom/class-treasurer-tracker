@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { StudentStatus } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import type { Lang } from "@/lib/i18n";
+import { receiptLink } from "./LedgerTable";
 
 export interface FundTableLine {
   studentId: string;
@@ -13,6 +14,7 @@ export interface FundTableLine {
   dueCents: number | null;
   paidCents: number;
   status: StudentStatus;
+  receiptIds: string[];
 }
 
 const ICON: Record<StudentStatus, { icon: string; cls: string }> = {
@@ -99,7 +101,7 @@ export function FundTable({
                     <span aria-hidden className={ICON[l.status].cls}>
                       {ICON[l.status].icon}
                     </span>
-                    {labels.statusLabel[l.status]}
+                    <StatusLabel label={labels.statusLabel[l.status]} receiptIds={l.receiptIds} />
                   </span>
                 </td>
               </tr>
@@ -108,5 +110,21 @@ export function FundTable({
         </table>
       </div>
     </div>
+  );
+}
+
+/** The status links to the payment receipt; installments get (1) (2) … links, oldest first. */
+function StatusLabel({ label, receiptIds }: { label: string; receiptIds: string[] }) {
+  const a = (id: string, text: string) => (
+    <a key={id} className="text-accent underline-offset-2 hover:underline" href={receiptLink(id)} target="_blank" rel="noopener noreferrer">
+      {text}
+    </a>
+  );
+  if (receiptIds.length === 0) return <>{label}</>;
+  if (receiptIds.length === 1) return a(receiptIds[0], label);
+  return (
+    <>
+      {label} {receiptIds.map((id, i) => a(id, `(${i + 1})`))}
+    </>
   );
 }

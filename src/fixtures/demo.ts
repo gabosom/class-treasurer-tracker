@@ -83,9 +83,11 @@ const flip: [string, number, string][] = [
   ["S18", 35, "1 niño + 1 adulto"],
 ];
 flip.slice(0, 9).forEach(([s, amt], i) =>
-  ledger.push(txn(`2026-10-0${1 + (i % 7)}`, "EV-2026-10-FLIP-ZONE", "contribution", amt, s, "", "", "venmo", "", "", "", "", "")),
+  ledger.push(txn(`2026-10-0${1 + (i % 7)}`, "EV-2026-10-FLIP-ZONE", "contribution", amt, s, "", "", "venmo", "", `demo-pago-${s}`, "", "", "")),
 );
-ledger.push(txn("2026-10-05", "EV-2026-10-FLIP-ZONE", "contribution", 20, "S10", "", "", "cash", "", "", "", "", ""));
+// S10 paid in two installments, each with a receipt: the status shows (1) (2).
+ledger.push(txn("2026-10-05", "EV-2026-10-FLIP-ZONE", "contribution", 20, "S10", "", "", "cash", "", "demo-pago-S10-1", "", "", ""));
+ledger.push(txn("2026-10-08", "EV-2026-10-FLIP-ZONE", "contribution", 15, "S10", "", "", "venmo", "", "demo-pago-S10-2", "", "", ""));
 ledger.push(txn("2026-10-07", "EV-2026-10-FLIP-ZONE", "expense", 100, "", "Flip Zone", "Silvana Mendoza", "other", "", "demo-deposit", "Depósito reserva local", "", ""));
 
 const flipTotal = flip.reduce((a, [, amt]) => a + amt, 0);

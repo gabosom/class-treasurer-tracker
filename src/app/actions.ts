@@ -36,7 +36,7 @@ export async function enterFamiliesCode(_prev: { error: boolean }, form: FormDat
 }
 
 export async function enterDirectivaCode(_prev: { error: boolean }, form: FormData) {
-  return enter("directiva", form, "/");
+  return enter("directiva", form, "/directiva");
 }
 
 /** Clears the directiva code cookie. Google sessions are signed out client-side by next-auth. */
