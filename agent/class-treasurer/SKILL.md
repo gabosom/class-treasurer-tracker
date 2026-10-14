@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.2**
+- **skill_version: 1.4.3**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -151,7 +151,7 @@ and adults from `Participants.attendees`, so keep that note in a readable form l
 ### Which Ledger columns each type uses
 | type | required | optional | leave blank |
 |---|---|---|---|
-| `contribution` | txn_id, date, fund_id, type, amount, student_id, method | payment_ref, private_notes | payee, paid_by, receipt_file_id, public_desc, reimburses_txn |
+| `contribution` | txn_id, date, fund_id, type, amount, student_id, method | payment_ref, receipt_file_id, private_notes | payee, paid_by, public_desc, reimburses_txn |
 | `income` | txn_id, date, fund_id, type, amount, method, public_desc | payee (source), payment_ref, private_notes | student_id, paid_by, receipt_file_id, reimburses_txn |
 | `expense` | txn_id, date, fund_id, type, amount, payee (vendor), paid_by, method, receipt_file_id, public_desc | private_notes | student_id, payment_ref, reimburses_txn |
 | `reimburse_parent` | txn_id, date, fund_id, type, amount, payee (the parent), method, reimburses_txn | payment_ref, private_notes | student_id, paid_by, receipt_file_id, public_desc |
@@ -239,7 +239,8 @@ Needs: the receipt image or PDF, the fund, and who paid (default: `treasurer` if
 
 ### `log_contribution` — family payments
 Needs: who paid, the amount, the fund, the method, the date (default: today). Screenshots of
-Venmo or Zelle work.
+Venmo or Zelle work. A receipt image (transfer screenshot, deposit slip) is optional; if one is
+attached, it's uploaded in step 5.
 1. Match the payer to a student by checking, in order:
    - `payment_aliases`
    - `mom_name` / `dad_name`
@@ -253,10 +254,23 @@ Venmo or Zelle work.
 4. Check the amount against what's still due (§5).
    - If it's **more** than what's due, ask. Families aren't expected to overpay.
    - If it's less, record it; the student shows as partially paid.
-5. Write a `contribution` row (see "Writing a row"), with `payment_ref` set to the Venmo/Zelle transaction ID if one is visible.
-6. If the payer's display name wasn't in `payment_aliases`, add it to that student's
+5. **If an image or PDF is attached**, upload it before writing the row:
+   - Pick the `txn_id` first (§3: highest existing + 1). The file name uses it.
+   - Upload to `Recibos/<fund_id>/`. If that subfolder doesn't exist, create it inside
+     `Recibos` (`1gpNShYJEYMFFUltJQx4m1MIOW-geVyAp`).
+   - File name: `YYYY-MM-DD_<fund_id>_<txn_id>.<ext>`, using the payment date and the original
+     extension, e.g. `2026-10-13_EV-2026-10-FLIP-ZONE_T0022.jpg`.
+   - Several images for one payment: `…_p1.jpg`, `…_p2.jpg`. Use the first file's ID and mention
+     the others in `private_notes`.
+   - If the upload fails, still write the row with `receipt_file_id` blank, and tell the treasurer.
+   - The file can show account numbers. That's fine in Drive, but rule 9 still applies: never copy
+     them into the Sheet.
+6. Write a `contribution` row (see "Writing a row"):
+   - `payment_ref` = the Venmo/Zelle/bank transaction ID, if one is visible
+   - `receipt_file_id` = the uploaded file's ID from step 5, or blank if there was no attachment
+7. If the payer's display name wasn't in `payment_aliases`, add it to that student's
    `payment_aliases`, separated by `; `.
-7. Reply per §6, including what that student still owes for the fund.
+8. Reply per §6, including what that student still owes for the fund and the receipt file name if one was uploaded.
 
 ### `create_event` — a new outing
 Needs: name, date, total cost (buffer included), how the cost breaks down, and **for each

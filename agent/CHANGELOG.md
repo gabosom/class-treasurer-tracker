@@ -3,6 +3,13 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.3 — 2026-10-14 — schema 5 (no migration)
+- `log_contribution`: when an image or PDF is attached, upload it to `Recibos/<fund_id>/` as
+  `YYYY-MM-DD_<fund_id>_<txn_id>.<ext>` and set `receipt_file_id` to its Drive ID. If the upload
+  fails, the row is still written, with `receipt_file_id` blank, and the treasurer is told.
+- Column table: `receipt_file_id` moved from "leave blank" to "optional" for `contribution`.
+- No dashboard change needed: contribution receipts already show as links in Detalles (directiva only).
+
 ## 1.4.2 — 2026-10-14 — schema 5 (no migration)
 - Rule 13 rewritten: `gog sheets append` is broken (it writes down column A). Never use it. Write
   every new row with `gog sheets update` to an exact range `<Tab>!A<ROW>:<last col><ROW>`. Cells are
