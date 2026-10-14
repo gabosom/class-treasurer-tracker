@@ -3,6 +3,15 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.2 — 2026-10-14 — schema 5 (no migration)
+- Rule 13 rewritten: `gog sheets append` is broken (it writes down column A). Never use it. Write
+  every new row with `gog sheets update` to an exact range `<Tab>!A<ROW>:<last col><ROW>`. Cells are
+  separated by `|`, amounts are bare numbers, dates are `yyyy-mm-dd`. Read the row back with
+  `gog sheets get`.
+- New section "Writing a row": how to find the next row (last non-empty cell in column A + 1; the
+  target row must be empty), the command, and the read-back checks.
+- Steps that said "Append the … row" now say "Write the … row".
+
 ## 1.4.1 — 2026-10-14 — schema 5 (no migration)
 - New rule 13: send each row as one value per column (never a JSON string), write amounts as
   numbers, and read every write back. On 2026-10-13, T0020 and T0021 were written as JSON text,

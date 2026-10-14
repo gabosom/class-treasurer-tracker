@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.1**
+- **skill_version: 1.4.2**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -37,7 +37,8 @@ so **accuracy matters more than speed**: when unsure, ask.
    Never share any file or change any sharing setting.
 3. **Never delete rows** in `Ledger`. Edit an existing row only when the treasurer explicitly asks
    (see `correct_row`). Never reorder or sort tabs.
-4. **Append rows at the first empty row** of the tab. Don't insert rows in the middle.
+4. **Add rows at the next empty row** of the tab (see "Writing a row" under rule 13). Don't insert
+   rows in the middle.
 5. **Ask before writing** if a required field is unknown or ambiguous: fund, amount, date, who
    paid, which student. Otherwise, write first, then reply with exactly what you wrote (§6).
 6. **Public text must contain no names.** `Funds.name`, `Funds.notes` and `Ledger.public_desc` are
@@ -58,11 +59,35 @@ so **accuracy matters more than speed**: when unsure, ask.
     a row is going, a family without one isn't. Every event row must have both `amount_due` and
     `attendees` filled in (e.g. `2 adults, 1 kid`). If a family hasn't confirmed or the headcount
     is unknown (e.g. a blank survey answer), **don't add the row**; ask the treasurer or wait.
-13. **One record = one row, then read it back.** Send each new row as a list of cell values (one
-    value per column, A→N for `Ledger`), never as a single JSON string. Amounts are numbers (`24`),
-    not text (`"24.00"`). After every write, read the row back: every value must be in its own
-    column, with no `[`, `]` or `"` left over. If it isn't, **stop**, write nothing else, and tell the
-    treasurer which rows are wrong.
+13. **Never use `gog sheets append`.** It's broken: it writes the values down column A, one value
+    per row, instead of across one row. Every new row in any tab is written with
+    `gog sheets update` to an exact range, then read back. See "Writing a row" below. If the read-back
+    is wrong, **stop**, write nothing else, and tell the treasurer which rows are wrong.
+
+### Writing a row (every tab)
+
+1. **Find the next row.** Read `<Tab>!A:A`. The next row is the number of the last non-empty cell
+   + 1 (the header is row 1). Before writing, read that row and make sure it's completely empty.
+   If any row above it is blank, or the target row isn't empty, **stop** and tell the treasurer.
+2. **Write the whole row in one command**, every column from A to the tab's last column, in §3 order:
+
+   ```
+   gog sheets update --account gabosom@gmail.com "1KkmQm69pmdNL3-GcoDDpB8s_FIVYjPQziySqN3FrSLs" "Ledger!A<ROW>:N<ROW>" \
+     "txn_id|date|fund_id|type|amount|student_id|payee|paid_by|method|payment_ref|receipt_file_id|public_desc|private_notes|reimburses_txn"
+   ```
+
+   Ranges by tab: `Roster!A:J`, `Funds!A:N`, `Participants!A:D`, `Ledger!A:N`, `Config!A:B`.
+   - Separate cells with a pipe `|`. Empty cell = nothing between the pipes (`||`).
+   - A value must never contain `|`. Replace it with `/`.
+   - Amount: a bare number (`24`, `17.5`), never `"24.00"` or `$24`.
+   - Date: `yyyy-mm-dd`.
+   - Example (contribution, row 23):
+     `"T0022|2026-10-14|EV-2026-10-FLIP-ZONE|contribution|35|S13|||other|12345678||||"`
+     (14 values, 13 pipes)
+3. **Read it back right away** with `gog sheets get` on the same range. Check:
+   - each value is in its own column;
+   - there are no `[`, `]` or `"` left over;
+   - the date cell shows as `2026-10-14`, and the amount is a number, not text.
 
 ---
 
@@ -203,7 +228,7 @@ Needs: the receipt image or PDF, the fund, and who paid (default: `treasurer` if
      most 20 characters.
    - Several photos of one receipt: `…_p1.jpg`, `…_p2.jpg`. Use the first file's ID in the Ledger
      and mention the others in `private_notes`.
-4. Append the `expense` row:
+4. Write the `expense` row (see "Writing a row"):
    - `payee` = vendor
    - `paid_by` per §3
    - `method` = `card` unless told otherwise
@@ -228,7 +253,7 @@ Venmo or Zelle work.
 4. Check the amount against what's still due (§5).
    - If it's **more** than what's due, ask. Families aren't expected to overpay.
    - If it's less, record it; the student shows as partially paid.
-5. Append a `contribution` row, with `payment_ref` set to the Venmo/Zelle transaction ID if one is visible.
+5. Write a `contribution` row (see "Writing a row"), with `payment_ref` set to the Venmo/Zelle transaction ID if one is visible.
 6. If the payer's display name wasn't in `payment_aliases`, add it to that student's
    `payment_aliases`, separated by `; `.
 7. Reply per §6, including what that student still owes for the fund.
@@ -243,7 +268,7 @@ attending family, who's coming** (the student, siblings, adults).
    - If only a total is given, per-person share = total_cost ÷ total attendees across all
      families, **rounded up to the whole dollar**; amount_due = share × that family's attendees.
    - If the treasurer gives a family's amount directly, use it.
-3. Append the `Funds` row: type `event`, status `collecting`, `price_per_student` **blank**,
+3. Write the `Funds` row: type `event`, status `collecting`, `price_per_student` **blank**,
    `total_cost` = the total. `notes` = the breakdown and per-person prices in Spanish, with no names, e.g.
    "Entrada niño $15, adulto $10; bus $120 repartido. Total $660 (incl. 10%)."
    **If the treasurer gives the venue's cost breakdown**, also fill in the structured columns:
@@ -251,7 +276,7 @@ attending family, who's coming** (the student, siblings, adults).
    and `drinks_snacks`. Leave a column blank if it doesn't apply; never guess a price. If the
    treasurer says the rest of the total goes to drinks/snacks, `drinks_snacks` = `total_cost` −
    venue subtotal (kids × venue_per_kid + adults × venue_per_adult + venue_flat_fee).
-4. Append one `Participants` row per **confirmed** family: `amount_due`, plus `attendees` like
+4. Write one `Participants` row per **confirmed** family: `amount_due`, plus `attendees` like
    `1 niño + 2 adultos`. Families who haven't confirmed (or left the headcount blank) get no row (rule 12).
 5. Create the folder `Recibos/<fund_id>/`.
 6. **Before writing**, show the treasurer a table (student, attendees, amount_due) with the
@@ -285,7 +310,7 @@ Needs: which parent was paid back, the amount, the method, the date.
 
 ### `refund_family`
 Needs: the student, the fund, the amount, the method, the date. The amount must be ≤ what that
-student has paid into that fund. Append the row; usually also run `update_participants`.
+student has paid into that fund. Write the row; usually also run `update_participants`.
 
 ### `log_income`
 Needs: the amount, the fund, the source, the method. `public_desc` like "Donación" or
@@ -297,7 +322,7 @@ Roster rows.** If they had paid, ask about a refund.
 
 ### `correct_row` — only when the treasurer explicitly asks
 Find the row by `txn_id`, show its current values, apply the requested change, and keep the
-`txn_id` the same. Append to `private_notes`: `[corregido YYYY-MM-DD: <what changed>]`.
+`txn_id` the same. Add at the end of `private_notes`: `[corregido YYYY-MM-DD: <what changed>]`.
 
 ### `status` — read-only questions ("who hasn't paid the zoo?")
 Answer from the Sheet using the definitions in §5. For full numbers, point to the dashboard.
