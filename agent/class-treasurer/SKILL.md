@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.0**
+- **skill_version: 1.4.1**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -58,6 +58,11 @@ so **accuracy matters more than speed**: when unsure, ask.
     a row is going, a family without one isn't. Every event row must have both `amount_due` and
     `attendees` filled in (e.g. `2 adults, 1 kid`). If a family hasn't confirmed or the headcount
     is unknown (e.g. a blank survey answer), **don't add the row**; ask the treasurer or wait.
+13. **One record = one row, then read it back.** Send each new row as a list of cell values (one
+    value per column, A→N for `Ledger`), never as a single JSON string. Amounts are numbers (`24`),
+    not text (`"24.00"`). After every write, read the row back: every value must be in its own
+    column, with no `[`, `]` or `"` left over. If it isn't, **stop**, write nothing else, and tell the
+    treasurer which rows are wrong.
 
 ---
 

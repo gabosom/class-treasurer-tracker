@@ -3,6 +3,11 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.1 — 2026-10-14 — schema 5 (no migration)
+- New rule 13: send each row as one value per column (never a JSON string), write amounts as
+  numbers, and read every write back. On 2026-10-13, T0020 and T0021 were written as JSON text,
+  one fragment per row, down column A of `Ledger` (rows 21–48). The dashboard showed data errors.
+
 ## 1.4.0 — 2026-10-08 — schema 5
 - schema_version → 5
 - Funds tab: new optional column `drinks_snacks` (additional drinks/snacks budget for an event).
