@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.4**
+- **skill_version: 1.4.5**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -144,7 +144,7 @@ and adults from `Participants.attendees`, so keep that note in a readable form l
 | `Funds.type` | `class` \| `event` |
 | `Funds.status` | `collecting` \| `closed` |
 | `Ledger.type` | `contribution` \| `income` \| `expense` \| `reimburse_parent` \| `refund_family` |
-| `Ledger.method` | `venmo` \| `zelle` \| `cash` \| `card` \| `other` |
+| `Ledger.method` | `venmo` \| `zelle` \| `cash` \| `card` \| `other` \| `en_especie` (in kind, no money moved: only for `log_in_kind` rows) |
 | `paid_by` | `treasurer`, or the parent's name **exactly** as it appears in `Roster` (`mom_name` or `dad_name`). For someone not in the roster, their full name, written the same way every time. |
 | `active` | checkbox, TRUE/FALSE |
 
@@ -327,17 +327,19 @@ Use when a parent buys things for a fund **instead of** transferring their fee. 
 is $35 and they spend $40.41 on drinks. No money reaches the treasurer, so record both sides:
 1. Log each purchase with `log_expense`: `paid_by` = that parent, receipt uploaded as usual.
 2. Write a `contribution` for the student: amount = the smaller of what's still due and the
-   purchases' total. `method` = `other`, `receipt_file_id` blank, and `private_notes` = "En especie:"
+   purchases' total. `method` = `en_especie`, `receipt_file_id` blank, and `private_notes` = "En especie:"
    plus the expense `txn_id`s.
 3. Write **offset** `reimburse_parent` rows totalling exactly that contribution amount, one per
-   expense, oldest expense first. Each row: `payee` = the parent, `method` = `other`,
+   expense, oldest expense first. Each row: `payee` = the parent, `method` = `en_especie`,
    `reimburses_txn` = the expense, `private_notes` = "Compensación en especie con <contribution
    txn_id>. No se movió dinero." The last row may cover only part of its expense.
 4. Reply with what's left: the parent is owed purchases − fee (a normal `reimburse_parent` when the
    treasurer pays it). If the purchases were less than the fee, the family still owes the
    difference.
 The dashboard then shows: the family paid in full, only the excess pending for the parent, and the
-treasurer's cash unchanged. **Never** offset a parent who transferred their fee in money: they're
+treasurer's cash unchanged. It labels these rows "en especie" and warns if the contribution and its
+offsets don't add up to the same amount, or if an offset points to an expense another parent paid.
+`payee` must be the parent's name exactly as in `Roster`. **Never** offset a parent who transferred their fee in money: they're
 owed their purchases in full.
 
 ### `refund_family`

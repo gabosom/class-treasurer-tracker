@@ -236,6 +236,8 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     const method = str(r[8]).toLowerCase();
     if (method && !(METHODS as readonly string[]).includes(method))
       warn("Ledger", row, `${id}: unknown method "${method}".`);
+    if (method === "en_especie" && type !== "contribution" && type !== "reimburse_parent")
+      warn("Ledger", row, `${id}: method en_especie is only for an in-kind contribution and its offset reimbursements.`);
     const t: Txn = {
       id,
       date,

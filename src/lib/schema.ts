@@ -68,7 +68,8 @@ export const TXN_TYPES = [
   "reimburse_parent",
   "refund_family",
 ] as const;
-export const METHODS = ["venmo", "zelle", "cash", "card", "other"] as const;
+/** `en_especie`: in-kind; no money moved (a contribution paid with purchases, and its offset reimbursements). */
+export const METHODS = ["venmo", "zelle", "cash", "card", "other", "en_especie"] as const;
 
 export type FundType = (typeof FUND_TYPES)[number];
 export type FundStatus = (typeof FUND_STATUSES)[number];

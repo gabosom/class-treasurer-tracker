@@ -137,6 +137,8 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
     if (t.type === "reimburse_parent")
       reimbursed.set(t.reimbursesTxn, (reimbursed.get(t.reimbursesTxn) ?? 0) + t.amountCents);
 
+  issues.push(...checkInKind(wb));
+
   const byParent = new Map<string, PendingParent>();
   for (const t of wb.txns) {
     if (t.type !== "expense" || isTreasurer(t.paidBy)) continue;
@@ -172,6 +174,46 @@ function statusOf(due: number | null, paid: number): StudentStatus {
   if (paid >= due) return "paid";
   if (paid > 0) return "partial";
   return "unpaid";
+}
+
+/**
+ * In-kind payments (skill log_in_kind): per fund and student, the `en_especie` contributions must equal the
+ * `en_especie` offset reimbursements to that student's parents, and each offset must point to an
+ * expense that parent paid. No money moves, so the two sides cancel in the treasurer's cash.
+ */
+function checkInKind(wb: Workbook): Issue[] {
+  const out: Issue[] = [];
+  const norm = (s: string) => s.trim().toLowerCase();
+  const studentOfParent = new Map<string, string>();
+  for (const s of wb.students) for (const p of [s.momName, s.dadName]) if (p) studentOfParent.set(norm(p), s.id);
+  const txnById = new Map(wb.txns.map((t) => [t.id, t]));
+  const totals = new Map<string, { contrib: number; offset: number; fundId: string; studentId: string }>();
+  const add = (fundId: string, studentId: string, k: "contrib" | "offset", cents: number) => {
+    const key = `${fundId}|${studentId}`;
+    const v = totals.get(key) ?? { contrib: 0, offset: 0, fundId, studentId };
+    v[k] += cents;
+    totals.set(key, v);
+  };
+  for (const t of wb.txns) {
+    if (t.method !== "en_especie") continue;
+    if (t.type === "contribution") add(t.fundId, t.studentId, "contrib", t.amountCents);
+    if (t.type !== "reimburse_parent") continue;
+    const exp = txnById.get(t.reimbursesTxn);
+    if (exp && norm(exp.paidBy) !== norm(t.payee))
+      out.push(issue(`${t.id}: in-kind offset to ${t.payee}, but ${exp.id} was paid by ${exp.paidBy}.`, "warning"));
+    const sid = studentOfParent.get(norm(t.payee));
+    if (!sid) out.push(issue(`${t.id}: in-kind offset to "${t.payee}", who isn't a parent in Roster.`, "warning"));
+    else add(t.fundId, sid, "offset", t.amountCents);
+  }
+  for (const v of totals.values())
+    if (v.contrib !== v.offset)
+      out.push(
+        issue(
+          `${v.fundId}: ${v.studentId}'s in-kind payment doesn't balance: contribution ${v.contrib / 100}, offsets ${v.offset / 100}.`,
+          "warning",
+        ),
+      );
+  return out;
 }
 
 function issue(message: string, severity: Issue["severity"] = "error"): Issue {

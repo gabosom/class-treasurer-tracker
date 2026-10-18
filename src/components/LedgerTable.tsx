@@ -41,7 +41,10 @@ export function LedgerTable({
               <tr key={x.id} className="border-b border-line align-top last:border-0">
                 <td className="px-4 py-2 text-ink-3 sm:px-2">{x.id}</td>
                 <td className="whitespace-nowrap px-2 py-2 text-ink-2">{formatDate(x.date, lang)}</td>
-                <td className="px-2 py-2 text-ink">{t.txnType[x.type] ?? x.type}</td>
+                <td className="px-2 py-2 text-ink">
+                  {t.txnType[x.type] ?? x.type}
+                  {x.method === "en_especie" && <div className="text-xs text-ink-3">{t.inKind}</div>}
+                </td>
                 <td className="px-2 py-2 text-ink-2">{x.fundName}</td>
                 <td className="px-2 py-2 text-ink">
                   {who}

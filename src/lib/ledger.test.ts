@@ -240,12 +240,32 @@ describe("voided rows and in-kind payments", () => {
     const l = ledgerOf(
       withLedgerRows(
         ["T0090", "2026-10-20", "EV-2026-11-ZOO", "expense", 20, "", "Snack Shop", "Marta López", "card", "", "r1", "Snacks", "", ""],
-        ["T0091", "2026-10-20", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "other", "", "", "", "En especie (T0090)", ""],
-        ["T0092", "2026-10-20", "EV-2026-11-ZOO", "reimburse_parent", 15, "", "Marta López", "", "other", "", "", "", "Compensación en especie con T0091", "T0090"],
+        ["T0091", "2026-10-20", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "en_especie", "", "", "", "En especie (T0090)", ""],
+        ["T0092", "2026-10-20", "EV-2026-11-ZOO", "reimburse_parent", 15, "", "Marta López", "", "en_especie", "", "", "", "Compensación en especie con T0091", "T0090"],
       ),
     );
     expect(fund(l, "EV-2026-11-ZOO").lines.find((x) => x.student.id === "S04")!.status).toBe("paid");
     expect(l.pending.find((p) => p.name === "Marta López")!.totalCents).toBe(500);
+    expect(l.issues).not.toContainEqual(expect.objectContaining({ message: expect.stringContaining("in-kind") }));
+  });
+
+  it("warns when an in-kind payment doesn't balance or the offset points to someone else's expense", () => {
+    const l = ledgerOf(
+      withLedgerRows(
+        ["T0090", "2026-10-20", "EV-2026-11-ZOO", "expense", 20, "", "Snack Shop", "Marta López", "card", "", "r1", "Snacks", "", ""],
+        ["T0091", "2026-10-20", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "en_especie", "", "", "", "", ""],
+        ["T0092", "2026-10-20", "EV-2026-11-ZOO", "reimburse_parent", 10, "", "Marta López", "", "en_especie", "", "", "", "", "T0090"],
+      ),
+    );
+    expect(l.issues.map((i) => i.message)).toContain("EV-2026-11-ZOO: S04's in-kind payment doesn't balance: contribution 15, offsets 10.");
+    const wrong = ledgerOf(
+      withLedgerRows(
+        ["T0090", "2026-10-20", "EV-2026-11-ZOO", "expense", 20, "", "Snack Shop", "Ana Gómez", "card", "", "r1", "Snacks", "", ""],
+        ["T0091", "2026-10-20", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "en_especie", "", "", "", "", ""],
+        ["T0092", "2026-10-20", "EV-2026-11-ZOO", "reimburse_parent", 15, "", "Marta López", "", "en_especie", "", "", "", "", "T0090"],
+      ),
+    );
+    expect(wrong.issues.some((i) => i.message.startsWith("T0092: in-kind offset to Marta López, but T0090 was paid by Ana Gómez"))).toBe(true);
   });
 });
 

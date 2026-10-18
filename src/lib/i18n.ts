@@ -127,6 +127,7 @@ const es = {
     refund_family: "Devolución",
   } as Record<string, string>,
   paidBy: "pagó",
+  inKind: "en especie",
   treasurer: "tesorero",
 };
 
@@ -253,6 +254,7 @@ const en: typeof es = {
     refund_family: "Refund",
   },
   paidBy: "paid by",
+  inKind: "in kind",
   treasurer: "treasurer",
 };
 

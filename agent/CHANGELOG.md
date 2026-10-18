@@ -3,6 +3,16 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.5 — 2026-10-18 — schema 5 (no migration)
+- New `Ledger.method` value `en_especie`. Use it only for the contribution and the offset
+  `reimburse_parent` rows of `log_in_kind`, so they can't be mistaken for money that moved. The
+  dashboard labels them "en especie" and warns if a student's in-kind contribution and offsets don't
+  match.
+- One-time step: add `en_especie` to the dropdown on `Ledger!I2:I2000` (data validation, reject
+  invalid input). Keep the other values as they are.
+- Fix needed now: set T0030's method to `en_especie`, and write the S26 offsets with method
+  `en_especie` ($30.03 → T0029, $4.97 → T0031).
+
 ## 1.4.4 — 2026-10-18 — schema 5 (no migration)
 - New operation `log_in_kind`: a family pays its fee by buying things. Write the expenses, a
   `contribution`, and offset `reimburse_parent` rows (no money moves) for the same amount. The parent
