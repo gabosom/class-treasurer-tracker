@@ -3,6 +3,17 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.6 — 2026-10-19 — schema 5 (no migration)
+- `Funds.total_cost` means two different things now (dashboard D18):
+  - **filled in:** the fixed planned total. It never moves with attendance. A blank `drinks_snacks` =
+    "the rest of the total"; if the venue + drinks lines exceed it, the dashboard flags it.
+  - **blank:** the planned total is calculated as venue subtotal + `drinks_snacks`, and an event
+    with cost columns no longer shows as "por definir".
+- `create_event`: ask whether the budget is fixed or follows attendance, and fill in `total_cost` or
+  `drinks_snacks` accordingly (see step 3). Don't update `total_cost` when attendance changes
+  unless the treasurer asks.
+- No change needed to existing rows.
+
 ## 1.4.5 — 2026-10-18 — schema 5 (no migration)
 - New `Ledger.method` value `en_especie`. Use it only for the contribution and the offset
   `reimburse_parent` rows of `log_in_kind`, so they can't be mistaken for money that moved. The

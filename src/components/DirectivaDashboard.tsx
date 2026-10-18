@@ -100,7 +100,7 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
                   <p className="text-sm text-ink-2">
                     {f.type === "class"
                       ? `${t.price}: ${f.priceCents === null ? t.tbd : $(f.priceCents)}`
-                      : `${t.totalCost}: ${f.totalCostCents === null ? t.tbd : $(f.totalCostCents)}`}
+                      : `${t.totalCost}: ${f.totalCostCents === null ? t.tbd : $(f.totalCostCents)}${f.totalCostComputed ? ` (${t.computed})` : ""}`}
                   </p>
                   {f.notes && <p className="text-sm text-ink-3">{f.notes}</p>}
                   {f.budget && <BudgetCard b={f.budget} t={t} lang={lang} />}

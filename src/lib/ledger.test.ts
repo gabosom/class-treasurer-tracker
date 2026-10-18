@@ -284,6 +284,19 @@ describe("funds without a cost", () => {
     expect(buildDirectivaView(parsed, l).funds.find((f) => f.id === "EV-2026-11-ZOO")!.costSet).toBe(false);
   });
 
+  it("an event with a blank total_cost but cost columns gets a calculated total, without a warning", () => {
+    const wb = clone(sampleWorkbook);
+    const z = zooRow(wb);
+    z[4] = "";
+    z[8] = 10; // venue_per_kid
+    z[13] = 20; // drinks_snacks
+    const l = ledgerOf(wb);
+    const zoo = fund(l, "EV-2026-11-ZOO");
+    // Zoo participants: "1 niño + 1 adulto", "1 niño + 1 hermano + 1 adulto", "1 niño" → 4 kids
+    expect(zoo).toMatchObject({ costSet: true, eventCostCents: 4 * 1000 + 2000, eventCostComputed: true });
+    expect(l.issues.some((i) => i.message.includes("EV-2026-11-ZOO has no total_cost"))).toBe(false);
+  });
+
   it("a class fund without a price keeps its spending in the class total", () => {
     const wb = clone(sampleWorkbook);
     wb.Funds!.find((r) => r[0] === "CLASS-1")![3] = "";

@@ -77,7 +77,10 @@ export function FamiliesDashboard({ v, t, lang }: { v: FamiliesView; t: Dict; la
                   <p className="mt-2 text-sm text-ink-2">{t.familiesPaid(e.paidCount, e.payingCount)}</p>
                 )}
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                  <Row label={t.totalCost} value={e.totalCostCents === null ? t.tbd : $(e.totalCostCents)} />
+                  <Row
+                  label={t.totalCost}
+                  value={e.totalCostCents === null ? t.tbd : `${$(e.totalCostCents)}${e.totalCostComputed ? ` (${t.computed})` : ""}`}
+                />
                   <Row label={t.collected} value={$(e.collectedCents)} />
                   <Row label={t.spent} value={$(e.spentCents)} />
                   <Row

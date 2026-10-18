@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.5**
+- **skill_version: 1.4.6**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -114,8 +114,11 @@ The last 6 columns are **optional** and only for events (leave them blank for th
 
 There are no default prices: a blank column means "doesn't apply" and the dashboard hides that
 line. When any of these columns is set, the dashboard shows a budget for the event (revenue,
-venue costs, drinks/snacks, planned total = venue subtotal + `drinks_snacks`) for the families in
-`Participants`, and flags it if the planned total differs from `total_cost`. It counts kids
+venue costs, drinks/snacks, planned total) for the families in `Participants`. **`total_cost` is
+the fixed planned total when it's filled in**: it never changes with attendance, a blank
+`drinks_snacks` shows as "the rest of the total", and the card flags it if the cost lines exceed
+it. **If `total_cost` is blank**, the planned total is calculated as venue subtotal +
+`drinks_snacks`, and it moves with attendance. It counts kids
 and adults from `Participants.attendees`, so keep that note in a readable form like
 `2 adultos + 1 niño` or `2 adults, 1 kid` (siblings count as kids).
 
@@ -287,9 +290,13 @@ attending family, who's coming** (the student, siblings, adults).
    "Entrada niño $15, adulto $10; bus $120 repartido. Total $660 (incl. 10%)."
    **If the treasurer gives the venue's cost breakdown**, also fill in the structured columns:
    `venue_per_kid`, `venue_per_adult`, `venue_flat_fee`, `revenue_per_kid`, `revenue_per_adult`
-   and `drinks_snacks`. Leave a column blank if it doesn't apply; never guess a price. If the
-   treasurer says the rest of the total goes to drinks/snacks, `drinks_snacks` = `total_cost` −
-   venue subtotal (kids × venue_per_kid + adults × venue_per_adult + venue_flat_fee).
+   and `drinks_snacks`. Leave a column blank if it doesn't apply; never guess a price.
+   - **Fixed budget** ("the outing costs $X, period"): write `total_cost`. If the rest goes to
+     drinks/snacks, leave `drinks_snacks` **blank**; the dashboard shows the remainder.
+   - **Budget that follows attendance** ("venue per person plus $X of drinks"): leave `total_cost`
+     **blank** and fill in `drinks_snacks`; the dashboard calculates the total.
+   - Ask the treasurer which one if it's unclear. Don't change `total_cost` when attendance
+     changes unless the treasurer asks.
 4. Write one `Participants` row per **confirmed** family: `amount_due`, plus `attendees` like
    `1 niño + 2 adultos`. Families who haven't confirmed (or left the headcount blank) get no row (rule 12).
 5. Create the folder `Recibos/<fund_id>/`.

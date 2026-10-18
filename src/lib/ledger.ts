@@ -1,3 +1,4 @@
+import { computeEventBudget } from "./budget";
 import { daysBetween } from "./money";
 import { isTreasurer } from "./parse";
 import { type Fund, type Issue, type Pot, type Student, type Txn, type Workbook, potOf } from "./schema";
@@ -17,8 +18,11 @@ export interface StudentLine {
 
 export interface FundSummary {
   fund: Fund;
-  /** Cost is set (class: price_per_student; event: total_cost). If not, the goal shows as "to be determined"; the fund still counts in totals. */
+  /** Cost is set (class: price_per_student; event: a planned total). If not, the goal shows as "to be determined"; the fund still counts in totals. */
   costSet: boolean;
+  /** Event planned total: Funds.total_cost if set, else calculated from the budget columns (D18) */
+  eventCostCents: number | null;
+  eventCostComputed: boolean;
   pot: Pot;
   contributionsCents: number;
   incomeCents: number;
@@ -110,9 +114,13 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
       contributionsCents + incomeCents - expensesCents - refundsCents;
 
     const paying = lines.filter((l) => l.status !== "waived");
+    const eventCostCents =
+      fund.type !== "event" ? null : (fund.totalCostCents ?? computeEventBudget(fund, wb.participants)?.confirmed.totalCostCents ?? null);
     return {
       fund,
-      costSet: fund.type === "class" ? fund.priceCents !== null : fund.totalCostCents !== null,
+      costSet: fund.type === "class" ? fund.priceCents !== null : eventCostCents !== null,
+      eventCostCents,
+      eventCostComputed: fund.type === "event" && fund.totalCostCents === null && eventCostCents !== null,
       pot: potOf(fund.type),
       contributionsCents,
       incomeCents,

@@ -38,8 +38,7 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
   };
 
   const price = (c: number | null) => (c === null ? "" : $(c));
-  const planned = b.confirmed.totalCostCents;
-  const mismatch = b.fundTotalCostCents !== null && planned !== null && b.fundTotalCostCents !== planned;
+  const c = b.confirmed;
 
   return (
     <div className="rounded-lg border border-line bg-surface-0 p-3 sm:p-4">
@@ -71,14 +70,15 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
               { label: T.venueAdults(price(b.venuePerAdultCents)), value: (s) => s.venueAdultsCents },
               { label: T.venueFlat, value: (s) => s.venueFlatFeeCents },
               { label: T.venueSubtotal, value: (s) => s.venueSubtotalCents, strong: true },
-              { label: T.drinks, value: (s) => s.drinksCents },
-              // Subtotal local + bebidas y snacks adicionales = costo total planificado
-              { label: T.totalCost, value: (s) => s.totalCostCents, strong: true },
+              { label: c.drinksIsRemainder ? T.drinksRemainder : T.drinks, value: (s) => s.drinksCents },
+              { label: T.unallocated, value: (s) => s.unallocatedCents },
+              // D18: a total_cost in Funds is fixed; otherwise venue subtotal + drinks/snacks.
+              { label: c.totalIsFixed ? T.totalFixed : T.totalCost, value: (s) => s.totalCostCents, strong: true },
             ])}
           </tbody>
         </table>
       </div>
-      {mismatch && <p className="mt-2 text-xs text-ink">⚠ {T.totalMismatch($(b.fundTotalCostCents!))}</p>}
+      {c.overCents > 0 && <p className="mt-2 text-xs text-bad">⚠ {T.over($(c.overCents))}</p>}
       {b.unreadableRows > 0 && <p className="mt-2 text-xs text-ink">⚠ {T.unreadable(b.unreadableRows)}</p>}
     </div>
   );

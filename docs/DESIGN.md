@@ -256,8 +256,9 @@ The agent also removes S07 from `Participants`, or sets her `amount_due` to 0.
   - Each line shows only when its column is filled in. There are no default prices.
   - revenue = kids × revenue_per_kid + adults × revenue_per_adult
   - venue subtotal = kids × venue_per_kid + adults × venue_per_adult + venue_flat_fee
-  - planned total cost = venue subtotal + drinks_snacks. If it differs from `total_cost` (the
-    event's goal), the card says so.
+  - planned total cost (D18): `total_cost` if filled in (fixed; a blank drinks_snacks = the rest of
+    the total; a "Sin asignar" line or an over-budget warning if the lines don't add up to it);
+    otherwise venue subtotal + drinks_snacks, calculated.
   - no surplus line: the budget doesn't plan for one
   - Kid/adult counts come from `attendees` ("2 adults, 1 kid" or "1 niño + 1 hermano + 2 adultos";
     siblings count as kids). A blank or unreadable note is left out of the headcount and flagged
@@ -454,6 +455,7 @@ Checks run on every read:
 | D15 | Event budget | Structured venue/revenue columns in `Funds` (schema 4); directiva budget card for the families in `Participants` only (no "max" scenario; no blank rows). Drinks/snacks is its own column (schema 5); planned total = venue subtotal + drinks_snacks, flagged if it differs from total_cost. No default prices in Config Event surpluses stay in events (D10 unchanged) |
 | D16 | Views | No families/public view for now. Two directiva-only tabs: **Directiva** (`/directiva`, the default; `/` redirects there) and **Reportes** (`/reportes`, the simple view the treasurer screenshots for the class group chat). In Directiva, a student's status links to the receipts of their contributions to that fund (several installments → (1) (2) …). One login (directiva code or Google) opens both; the families code is unused |
 | D17 | In-kind payments | A family that pays its fee by buying things is recorded as explicit rows: the expenses, a `contribution`, and offset `reimburse_parent` rows for the same amount, all with method `en_especie`. No netting is inferred by the dashboard (it would shortchange parents who paid in money and also bought things). The dashboard labels these rows and warns if they don't balance. Voided rows: amount 0 + `ANULADO` in notes, ignored |
+| D18 | Event total | `total_cost` filled in = fixed planned total (doesn't move with attendance; the card shows drinks as the remainder when drinks_snacks is blank, "Sin asignar" if the lines fall short, and warns if they exceed it). `total_cost` blank = calculated from venue + drinks_snacks. Replaces the D15 mismatch warning, which kept firing as attendance changed |
 
 ## 15. Open questions
 

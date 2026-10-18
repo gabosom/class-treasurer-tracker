@@ -151,8 +151,6 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     if (str(r[5]) && !date) warn("Funds", row, `Fund ${id}: date "${str(r[5])}" isn't YYYY-MM-DD; ignored.`);
     if (type === "class" && price === null)
       warn("Funds", row, `Fund ${id} has no price_per_student yet; goal shows as "to be determined" until it's set.`);
-    if (type === "event" && total === null)
-      warn("Funds", row, `Event ${id} has no total_cost yet; goal shows as "to be determined" until it's set.`);
     // Optional cost breakdown: an unreadable value is ignored with a warning, never fatal.
     const optMoney = (i: number, col: string) => {
       const v = toCents(r[i]);
@@ -180,6 +178,10 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
       drinksSnacksCents: optMoney(13, "drinks_snacks"),
       row,
     };
+    // D18: a blank total_cost is calculated from the venue/drinks columns; only warn when there are none.
+    const costCols = [fund.venuePerKidCents, fund.venuePerAdultCents, fund.venueFlatFeeCents, fund.drinksSnacksCents];
+    if (type === "event" && total === null && costCols.every((v) => v === null))
+      warn("Funds", row, `Event ${id} has no total_cost or cost columns yet; goal shows as "to be determined" until one is set.`);
     funds.push(fund);
     fundById.set(id, fund);
   });

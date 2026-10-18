@@ -43,10 +43,16 @@ export interface BudgetScenario {
   revenueAdultsCents: number | null;
   /** null when both revenue columns are blank */
   revenueCents: number | null;
-  /** Funds.drinks_snacks: additional drinks/snacks budget */
+  /** Funds.drinks_snacks; or, when it's blank and total_cost is set, what's left of the total after the venue */
   drinksCents: number | null;
-  /** Planned total = venue subtotal + drinks/snacks; null when there are no cost lines */
+  drinksIsRemainder: boolean;
+  /** total_cost set: total − (venue + drinks) when positive ("sin asignar") */
+  unallocatedCents: number | null;
+  /** total_cost set: how much the cost lines exceed it (0 if they don't) */
+  overCents: number;
+  /** Planned total: Funds.total_cost if set (fixed); otherwise venue subtotal + drinks/snacks. null when nothing is set */
   totalCostCents: number | null;
+  totalIsFixed: boolean;
 }
 
 export interface EventBudget {
@@ -89,6 +95,18 @@ export function computeEventBudget(fund: Fund, participants: Participant[]): Eve
   const revenueKidsCents = times(kids, revenuePerKidCents);
   const revenueAdultsCents = times(adults, revenuePerAdultCents);
 
+  // D18: a total_cost in Funds is the fixed planned total; a blank one is calculated from the lines.
+  const fixed = fund.totalCostCents;
+  let drinksCents = drinksSnacksCents;
+  let drinksIsRemainder = false;
+  if (fixed !== null && drinksCents === null && venueSubtotalCents !== null && venueSubtotalCents <= fixed) {
+    drinksCents = fixed - venueSubtotalCents;
+    drinksIsRemainder = true;
+  }
+  const lines = sum(venueSubtotalCents, drinksCents);
+  const unallocatedCents = fixed !== null && lines !== null && lines < fixed ? fixed - lines : null;
+  const overCents = fixed !== null && lines !== null && lines > fixed ? lines - fixed : 0;
+
   return {
     fundTotalCostCents: fund.totalCostCents,
     venuePerKidCents,
@@ -106,8 +124,12 @@ export function computeEventBudget(fund: Fund, participants: Participant[]): Eve
       revenueKidsCents,
       revenueAdultsCents,
       revenueCents: sum(revenueKidsCents, revenueAdultsCents),
-      drinksCents: drinksSnacksCents,
-      totalCostCents: sum(venueSubtotalCents, drinksSnacksCents),
+      drinksCents,
+      drinksIsRemainder,
+      unallocatedCents,
+      overCents,
+      totalCostCents: fixed ?? lines,
+      totalIsFixed: fixed !== null,
     },
     unreadableRows,
   };

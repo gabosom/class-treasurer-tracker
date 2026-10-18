@@ -30,6 +30,8 @@ export interface FamiliesView {
     date: string | null;
     status: string;
     totalCostCents: number | null; // null: to be determined
+    /** calculated from the budget columns because Funds.total_cost is blank */
+    totalCostComputed: boolean;
     collectedCents: number;
     spentCents: number;
     balanceCents: number;
@@ -76,7 +78,8 @@ export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
         notes: f.fund.notes,
         date: f.fund.date,
         status: f.fund.status,
-        totalCostCents: f.fund.totalCostCents,
+        totalCostCents: f.eventCostCents,
+        totalCostComputed: f.eventCostComputed,
         collectedCents: f.collectedCents + f.incomeCents,
         spentCents: f.expensesCents,
         balanceCents: f.balanceCents,
@@ -127,6 +130,7 @@ export interface DirectivaView {
     costSet: boolean;
     priceCents: number | null;
     totalCostCents: number | null;
+    totalCostComputed: boolean;
     /** Events with venue_per_kid set: budget for the families in Participants */
     budget: EventBudget | null;
     expectedCents: number;
@@ -202,7 +206,8 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
       costSet: f.costSet,
       budget: computeEventBudget(f.fund, wb.participants),
       priceCents: f.fund.priceCents,
-      totalCostCents: f.fund.totalCostCents,
+      totalCostCents: f.eventCostCents,
+      totalCostComputed: f.eventCostComputed,
       expectedCents: f.expectedCents,
       collectedCents: f.collectedCents,
       incomeCents: f.incomeCents,
