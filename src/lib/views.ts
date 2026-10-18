@@ -113,6 +113,8 @@ export interface DirectivaView {
     budget: EventBudget | null;
     expectedCents: number;
     collectedCents: number;
+    incomeCents: number;
+    expensesCents: number;
     balanceCents: number;
     lines: {
       studentId: string;
@@ -155,6 +157,8 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
       totalCostCents: f.fund.totalCostCents,
       expectedCents: f.expectedCents,
       collectedCents: f.collectedCents,
+      incomeCents: f.incomeCents,
+      expensesCents: f.expensesCents,
       balanceCents: f.balanceCents,
       lines: f.lines.map((x) => ({
         studentId: x.student.id,

@@ -91,8 +91,12 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
                 </summary>
                 <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
                   {f.expectedCents > 0 && (
-                    <Meter value={f.collectedCents} max={f.expectedCents} label={`${$(f.collectedCents)} / ${$(f.expectedCents)}`} />
+                    <div className="space-y-1">
+                      <p className="text-xs text-ink-2">{t.collectedOf($(f.collectedCents), $(f.expectedCents))}</p>
+                      <Meter value={f.collectedCents} max={f.expectedCents} label={t.collectedOf($(f.collectedCents), $(f.expectedCents))} />
+                    </div>
                   )}
+                  {f.expensesCents > 0 && <SpendMeter f={f} t={t} $={$} />}
                   <p className="text-sm text-ink-2">
                     {f.type === "class"
                       ? `${t.price}: ${f.priceCents === null ? t.tbd : $(f.priceCents)}`
@@ -157,6 +161,24 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
           </ul>
         )}
       </Card>
+    </div>
+  );
+}
+
+/** Money in (collected + income) vs. spent; the gap is what's left (the fund balance). */
+function SpendMeter({ f, t, $ }: { f: DirectivaView["funds"][number]; t: Dict; $: (c: number) => string }) {
+  const inCents = f.collectedCents + f.incomeCents;
+  const over = f.expensesCents > inCents;
+  const label = over
+    ? t.overspent($(f.expensesCents), $(f.expensesCents - inCents))
+    : t.spentOf($(f.expensesCents), $(inCents), $(f.balanceCents));
+  return (
+    <div className="space-y-1">
+      <p className={`text-xs ${over ? "text-bad" : "text-ink-2"}`}>
+        {over && <span aria-hidden>⚠ </span>}
+        {label}
+      </p>
+      <Meter value={f.expensesCents} max={over ? f.expensesCents : inCents} label={label} tone="neutral" />
     </div>
   );
 }

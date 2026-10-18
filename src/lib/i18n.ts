@@ -128,6 +128,9 @@ const es = {
   } as Record<string, string>,
   paidBy: "pagó",
   inKind: "en especie",
+  collectedOf: (a: string, b: string) => `Recaudado ${a} de ${b}`,
+  spentOf: (a: string, b: string, left: string) => `Gastado ${a} de ${b} recibido · Quedan ${left}`,
+  overspent: (a: string, over: string) => `Gastado ${a}: ${over} más de lo recibido`,
   treasurer: "tesorero",
 };
 
@@ -255,6 +258,9 @@ const en: typeof es = {
   },
   paidBy: "paid by",
   inKind: "in kind",
+  collectedOf: (a, b) => `Collected ${a} of ${b}`,
+  spentOf: (a, b, left) => `Spent ${a} of ${b} received · ${left} left`,
+  overspent: (a, over) => `Spent ${a}: ${over} more than received`,
   treasurer: "treasurer",
 };
 

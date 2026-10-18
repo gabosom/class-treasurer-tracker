@@ -18,8 +18,18 @@ export function Stat({ label, value, help }: { label: string; value: string; hel
   );
 }
 
-/** Progress meter: accent fill on a lighter track of the same hue. */
-export function Meter({ value, max, label }: { value: number; max: number; label: string }) {
+/** Progress meter: accent fill on a lighter track of the same hue; "neutral" = gray fill for spending. */
+export function Meter({
+  value,
+  max,
+  label,
+  tone = "accent",
+}: {
+  value: number;
+  max: number;
+  label: string;
+  tone?: "accent" | "neutral";
+}) {
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return (
     <div
@@ -29,9 +39,9 @@ export function Meter({ value, max, label }: { value: number; max: number; label
       aria-valuemax={max}
       aria-valuenow={value}
       title={label}
-      className="h-3 w-full overflow-hidden rounded-full bg-accent-track"
+      className={`h-3 w-full overflow-hidden rounded-full ${tone === "accent" ? "bg-accent-track" : "bg-line"}`}
     >
-      <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+      <div className={`h-full rounded-full ${tone === "accent" ? "bg-accent" : "bg-ink-2"}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
