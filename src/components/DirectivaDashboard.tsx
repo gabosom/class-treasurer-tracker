@@ -4,7 +4,7 @@ import type { DirectivaView } from "@/lib/views";
 import Link from "next/link";
 import { BudgetCard } from "./BudgetCard";
 import { PotTiles } from "./FamiliesDashboard";
-import { FundTable } from "./FundTable";
+import { FundDetail } from "./FundDetail";
 import { LedgerTable, receiptLink, studentNameMap } from "./LedgerTable";
 import { Card, Meter, Notice, SectionTitle } from "./ui";
 
@@ -104,18 +104,37 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
                   </p>
                   {f.notes && <p className="text-sm text-ink-3">{f.notes}</p>}
                   {f.budget && <BudgetCard b={f.budget} t={t} lang={lang} />}
-                  <FundTable
+                  <FundDetail
+                    fundId={f.id}
                     lines={f.lines}
+                    expenses={f.expenses}
                     lang={lang}
                     labels={{
-                      all: t.filterAll,
-                      pending: t.filterPending,
-                      student: t.student,
-                      parents: t.parents,
-                      due: t.due,
-                      paid: t.paid,
-                      status: t.status,
-                      statusLabel: t.statusLabel,
+                      families: t.budget.families,
+                      expenses: t.expenses,
+                      noExpenses: t.noExpenses,
+                      date: t.date,
+                      what: t.what,
+                      paidBy: t.paidByCol,
+                      reimbursement: t.reimbursementCol,
+                      amount: t.amount,
+                      total: t.total,
+                      receipt: t.receipt,
+                      treasurer: t.treasurerName,
+                      reimbursed: t.reimbursed,
+                      pending: t.pendingLabel,
+                      inKind: t.inKind,
+                      viewInLedger: t.viewInLedger,
+                      table: {
+                        all: t.filterAll,
+                        pending: t.filterPending,
+                        student: t.student,
+                        parents: t.parents,
+                        due: t.due,
+                        paid: t.paid,
+                        status: t.status,
+                        statusLabel: t.statusLabel,
+                      },
                     }}
                   />
                 </div>

@@ -47,6 +47,26 @@ describe("directiva view", () => {
     expect(d.pending[0].name).toBe("Ana Gómez");
   });
 
+  it("lists each fund's expenses with what was paid back in money, in kind, and what's pending", () => {
+    const raw = structuredClone(sampleWorkbook);
+    raw.Ledger!.push(
+      ["T0090", "2026-10-20", "EV-2026-11-ZOO", "expense", 20, "", "Snack Shop", "Marta López", "card", "", "", "Snacks", "", ""],
+      ["T0091", "2026-10-20", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "en_especie", "", "", "", "", ""],
+      ["T0092", "2026-10-20", "EV-2026-11-ZOO", "reimburse_parent", 15, "", "Marta López", "", "en_especie", "", "", "", "", "T0090"],
+      ["T0093", "2026-10-21", "EV-2026-11-ZOO", "reimburse_parent", 3, "", "Marta López", "", "cash", "", "", "", "", "T0090"],
+    );
+    const wb = parseWorkbook(raw);
+    const zoo = buildDirectivaView(wb, computeLedger(wb)).funds.find((f) => f.id === "EV-2026-11-ZOO")!;
+    expect(zoo.expenses.find((e) => e.id === "T0090")).toMatchObject({
+      paidBy: "Marta López",
+      inKindCents: 1500,
+      reimbursedCents: 300,
+      pendingCents: 200,
+    });
+    for (const e of zoo.expenses) if (!e.paidBy) expect(e.pendingCents).toBe(0);
+    expect(zoo.expenses.map((e) => e.date)).toEqual([...zoo.expenses.map((e) => e.date)].sort());
+  });
+
   it("links each student's contribution receipts per fund, oldest first", () => {
     const raw = structuredClone(sampleWorkbook);
     const ledger = raw.Ledger!;

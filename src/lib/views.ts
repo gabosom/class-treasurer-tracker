@@ -1,3 +1,4 @@
+import { isTreasurer } from "./parse";
 import { type EventBudget, computeEventBudget } from "./budget";
 import type { Ledger, PendingParent, StudentStatus } from "./ledger";
 import type { Issue, Pot, Txn, Workbook } from "./schema";
@@ -95,6 +96,23 @@ export function buildFamiliesView(wb: Workbook, l: Ledger): FamiliesView {
   };
 }
 
+export interface FundExpense {
+  id: string;
+  date: string;
+  payee: string;
+  publicDesc: string;
+  /** "" when the treasurer paid */
+  paidBy: string;
+  amountCents: number;
+  receiptFileId: string;
+  /** paid back in money */
+  reimbursedCents: number;
+  /** settled by an in-kind contribution (method en_especie) */
+  inKindCents: number;
+  /** still owed to the parent who paid; 0 for the treasurer */
+  pendingCents: number;
+}
+
 export interface DirectivaView {
   families: FamiliesView;
   treasurerCashCents: number;
@@ -127,6 +145,8 @@ export interface DirectivaView {
       /** Receipt file IDs of this student's contributions to this fund, oldest first */
       receiptIds: string[];
     }[];
+    /** This fund's expenses, oldest first, with how far each has been paid back */
+    expenses: FundExpense[];
   }[];
   txns: (Txn & { fundName: string })[];
   issues: Issue[];
@@ -140,6 +160,34 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
     const k = `${t.fundId}|${t.studentId}`;
     receipts.set(k, [...(receipts.get(k) ?? []), t.receiptFileId]);
   }
+  const backBy = new Map<string, { money: number; inKind: number }>();
+  for (const t of wb.txns) {
+    if (t.type !== "reimburse_parent") continue;
+    const v = backBy.get(t.reimbursesTxn) ?? { money: 0, inKind: 0 };
+    if (t.method === "en_especie") v.inKind += t.amountCents;
+    else v.money += t.amountCents;
+    backBy.set(t.reimbursesTxn, v);
+  }
+  const expensesOf = (fundId: string): FundExpense[] =>
+    wb.txns
+      .filter((t) => t.type === "expense" && t.fundId === fundId)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+      .map((t) => {
+        const treasurer = isTreasurer(t.paidBy);
+        const back = backBy.get(t.id) ?? { money: 0, inKind: 0 };
+        return {
+          id: t.id,
+          date: t.date,
+          payee: t.payee,
+          publicDesc: t.publicDesc,
+          paidBy: treasurer ? "" : t.paidBy,
+          amountCents: t.amountCents,
+          receiptFileId: t.receiptFileId,
+          reimbursedCents: back.money,
+          inKindCents: back.inKind,
+          pendingCents: treasurer ? 0 : Math.max(0, t.amountCents - back.money - back.inKind),
+        };
+      });
   return {
     families: buildFamiliesView(wb, l),
     treasurerCashCents: l.treasurerCashCents,
@@ -173,6 +221,7 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
         status: x.status,
         receiptIds: receipts.get(`${f.fund.id}|${x.student.id}`) ?? [],
       })),
+      expenses: expensesOf(f.fund.id),
     })),
     txns: [...wb.txns]
       .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
