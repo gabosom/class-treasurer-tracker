@@ -214,6 +214,33 @@ describe("real-Sheet quirks", () => {
   });
 });
 
+describe("owed to the treasurer (D19)", () => {
+  it("class fund separate from events: an event surplus never covers the class fund", () => {
+    const wb = clone(sampleWorkbook);
+    wb.Ledger = wb.Ledger!.filter((r) => !(r[2] === "CLASS-1" && r[3] === "contribution"));
+    const l = ledgerOf(wb);
+    expect(l.pots.class).toBeLessThan(0);
+    expect(l.pots.events).toBeGreaterThan(0);
+    const pendingClass = l.pending.flatMap((p) => p.expenses).filter((e) => e.txn.fundId === "CLASS-1").reduce((a, e) => a + e.remainingCents, 0);
+    expect(l.owedToTreasurer).toEqual([{ pot: "class", cents: -(l.pots.class + pendingClass) }]);
+  });
+
+  it("events pool together: one event's deficit is covered by another's surplus", () => {
+    // The zoo overspends by $5 (treasurer-paid); the pumpkin patch's $9 leftover keeps the events pot positive.
+    const zooBal = fund(ledgerOf(clone(sampleWorkbook)), "EV-2026-11-ZOO").balanceCents;
+    const l = ledgerOf(
+      withLedgerRows(["T0090", "2026-10-30", "EV-2026-11-ZOO", "expense", (zooBal + 500) / 100, "", "Bus", "treasurer", "card", "", "", "Bus", "", ""]),
+    );
+    expect(fund(l, "EV-2026-11-ZOO").balanceCents).toBe(-500);
+    expect(l.pots.events).toBeGreaterThan(0);
+    expect(l.owedToTreasurer.find((x) => x.pot === "events")).toBeUndefined();
+  });
+
+  it("is zero when both pots have at least what was spent", () => {
+    expect(ledgerOf(clone(sampleWorkbook)).owedToTreasurerCents).toBe(0);
+  });
+});
+
 describe("voided rows and in-kind payments", () => {
   it("a row voided with amount 0 + ANULADO is ignored without an error, and its txn_id stays taken", () => {
     const l = ledgerOf(

@@ -59,6 +59,13 @@ export interface Ledger {
   pendingTotalCents: number;
   /** Σ fund balances + pending reimbursements: class money that should be in the treasurer's account */
   treasurerCashCents: number;
+  /**
+   * What each pot owes the treasurer: its money in hand (balances + its pending reimbursements) when
+   * negative, i.e. the treasurer paid more for it than it has collected. The class fund and the
+   * events are separate; events pool together, as in the top tiles (D10, D19).
+   */
+  owedToTreasurer: { pot: Pot; cents: number }[];
+  owedToTreasurerCents: number;
   issues: Issue[];
 }
 
@@ -166,12 +173,24 @@ export function computeLedger(wb: Workbook, today: Date = new Date()): Ledger {
   const pending = [...byParent.values()].sort((a, b) => b.totalCents - a.totalCents);
   const pendingTotalCents = pending.reduce((a, p) => a + p.totalCents, 0);
 
+  const inHand: Record<Pot, number> = { ...pots };
+  for (const p of pending)
+    for (const e of p.expenses) {
+      const f = fundById.get(e.txn.fundId);
+      if (f) inHand[potOf(f.type)] += e.remainingCents;
+    }
+  const owedToTreasurer = (["class", "events"] as const)
+    .map((pot) => ({ pot, cents: -inHand[pot] }))
+    .filter((x) => x.cents > 0);
+
   return {
     funds,
     pots,
     pending,
     pendingTotalCents,
     treasurerCashCents: pots.class + pots.events + pendingTotalCents,
+    owedToTreasurer,
+    owedToTreasurerCents: owedToTreasurer.reduce((a, x) => a + x.cents, 0),
     issues,
   };
 }

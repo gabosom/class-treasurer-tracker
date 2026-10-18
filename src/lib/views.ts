@@ -119,6 +119,8 @@ export interface FundExpense {
 export interface DirectivaView {
   families: FamiliesView;
   treasurerCashCents: number;
+  owedToTreasurer: Ledger["owedToTreasurer"];
+  owedToTreasurerCents: number;
   pendingTotalCents: number;
   pending: PendingParent[];
   funds: {
@@ -195,6 +197,8 @@ export function buildDirectivaView(wb: Workbook, l: Ledger): DirectivaView {
   return {
     families: buildFamiliesView(wb, l),
     treasurerCashCents: l.treasurerCashCents,
+    owedToTreasurer: l.owedToTreasurer,
+    owedToTreasurerCents: l.owedToTreasurerCents,
     pendingTotalCents: l.pendingTotalCents,
     pending: l.pending,
     funds: l.funds.map((f) => ({

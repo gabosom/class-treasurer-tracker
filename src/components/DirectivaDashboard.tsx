@@ -23,8 +23,20 @@ export function DirectivaDashboard({ v, t, lang }: { v: DirectivaView; t: Dict; 
       )}
 
       <PotTiles v={v.families} t={t} lang={lang} />
-      {v.treasurerCashCents < 0 && (
-        <Notice kind="warning">⚠ {t.treasurerFronted($(-v.treasurerCashCents))}</Notice>
+      {/* Per pot (D19): the class fund and the events (pooled) each owe the treasurer what they spent beyond what they have. */}
+      {v.owedToTreasurerCents > 0 && (
+        <Notice kind="warning">
+          <div>⚠ {t.treasurerFronted($(v.owedToTreasurerCents))}</div>
+          <ul className="mt-1 space-y-0.5 text-sm">
+            {v.owedToTreasurer.map((x) => (
+              <li key={x.pot} className="flex max-w-sm justify-between gap-4">
+                <span className="text-ink-2">{x.pot === "class" ? t.classPot : t.eventsPot}</span>
+                <span className="num text-ink">{$(x.cents)}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-ink-3">{t.treasurerFrontedHelp}</p>
+        </Notice>
       )}
 
       {/* Pending reimbursements: what the class owes to parents who paid for things */}
