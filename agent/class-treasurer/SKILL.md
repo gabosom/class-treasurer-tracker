@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.3**
+- **skill_version: 1.4.4**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -322,6 +322,24 @@ Needs: which parent was paid back, the amount, the method, the date.
    expense's amount. If the amount paid doesn't match an exact set of open expenses, ask.
 3. Reply with what's still pending for that parent, if anything.
 
+### `log_in_kind` — a family pays its fee by buying things for the event
+Use when a parent buys things for a fund **instead of** transferring their fee. Example: their fee
+is $35 and they spend $40.41 on drinks. No money reaches the treasurer, so record both sides:
+1. Log each purchase with `log_expense`: `paid_by` = that parent, receipt uploaded as usual.
+2. Write a `contribution` for the student: amount = the smaller of what's still due and the
+   purchases' total. `method` = `other`, `receipt_file_id` blank, and `private_notes` = "En especie:"
+   plus the expense `txn_id`s.
+3. Write **offset** `reimburse_parent` rows totalling exactly that contribution amount, one per
+   expense, oldest expense first. Each row: `payee` = the parent, `method` = `other`,
+   `reimburses_txn` = the expense, `private_notes` = "Compensación en especie con <contribution
+   txn_id>. No se movió dinero." The last row may cover only part of its expense.
+4. Reply with what's left: the parent is owed purchases − fee (a normal `reimburse_parent` when the
+   treasurer pays it). If the purchases were less than the fee, the family still owes the
+   difference.
+The dashboard then shows: the family paid in full, only the excess pending for the parent, and the
+treasurer's cash unchanged. **Never** offset a parent who transferred their fee in money: they're
+owed their purchases in full.
+
 ### `refund_family`
 Needs: the student, the fund, the amount, the method, the date. The amount must be ≤ what that
 student has paid into that fund. Write the row; usually also run `update_participants`.
@@ -337,6 +355,9 @@ Roster rows.** If they had paid, ask about a refund.
 ### `correct_row` — only when the treasurer explicitly asks
 Find the row by `txn_id`, show its current values, apply the requested change, and keep the
 `txn_id` the same. Add at the end of `private_notes`: `[corregido YYYY-MM-DD: <what changed>]`.
+**To void a row** (a payment that didn't count, a duplicate), never delete it: set `amount` to the
+number `0` and start `private_notes` with `ANULADO YYYY-MM-DD: <why>`. The dashboard ignores it and
+the `txn_id` stays taken. If a real replacement exists, name its `txn_id` in the note.
 
 ### `status` — read-only questions ("who hasn't paid the zoo?")
 Answer from the Sheet using the definitions in §5. For full numbers, point to the dashboard.

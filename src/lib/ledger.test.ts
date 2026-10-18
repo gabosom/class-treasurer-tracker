@@ -214,6 +214,41 @@ describe("real-Sheet quirks", () => {
   });
 });
 
+describe("voided rows and in-kind payments", () => {
+  it("a row voided with amount 0 + ANULADO is ignored without an error, and its txn_id stays taken", () => {
+    const l = ledgerOf(
+      withLedgerRows(["T0090", "2026-10-13", "EV-2026-11-ZOO", "contribution", "0.0", "S04", "", "", "other", "", "", "", "ANULADO 2026-10-16: cuenta incorrecta", ""]),
+    );
+    expect(l.issues.filter((i) => i.severity === "error")).toEqual([]);
+    expect(fund(l, "EV-2026-11-ZOO").lines.find((x) => x.student.id === "S04")!.paidCents).toBe(0);
+    const dup = ledgerOf(
+      withLedgerRows(
+        ["T0090", "2026-10-13", "EV-2026-11-ZOO", "contribution", 0, "S04", "", "", "other", "", "", "", "ANULADO", ""],
+        ["T0090", "2026-10-14", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "other", "", "", "", "", ""],
+      ),
+    );
+    expect(dup.issues.some((i) => i.message.includes("Duplicate txn_id T0090"))).toBe(true);
+  });
+
+  it("amount 0 without ANULADO is still an error", () => {
+    const l = ledgerOf(withLedgerRows(["T0090", "2026-10-13", "EV-2026-11-ZOO", "contribution", 0, "S04", "", "", "other", "", "", "", "", ""]));
+    expect(l.issues.some((i) => i.severity === "error" && i.message.startsWith("T0090"))).toBe(true);
+  });
+
+  it("in-kind: a parent's purchases cover the fee via an offset row; status paid, only the excess pending", () => {
+    // S04 owes $15 for the zoo. Marta López buys $20 of snacks and pays her fee in kind.
+    const l = ledgerOf(
+      withLedgerRows(
+        ["T0090", "2026-10-20", "EV-2026-11-ZOO", "expense", 20, "", "Snack Shop", "Marta López", "card", "", "r1", "Snacks", "", ""],
+        ["T0091", "2026-10-20", "EV-2026-11-ZOO", "contribution", 15, "S04", "", "", "other", "", "", "", "En especie (T0090)", ""],
+        ["T0092", "2026-10-20", "EV-2026-11-ZOO", "reimburse_parent", 15, "", "Marta López", "", "other", "", "", "", "Compensación en especie con T0091", "T0090"],
+      ),
+    );
+    expect(fund(l, "EV-2026-11-ZOO").lines.find((x) => x.student.id === "S04")!.status).toBe("paid");
+    expect(l.pending.find((p) => p.name === "Marta López")!.totalCents).toBe(500);
+  });
+});
+
 describe("funds without a cost", () => {
   it("still count in totals and cards, with the goal 'to be determined'", async () => {
     const { buildFamiliesView, buildDirectivaView } = await import("./views");

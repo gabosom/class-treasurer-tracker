@@ -3,6 +3,15 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.4 — 2026-10-18 — schema 5 (no migration)
+- New operation `log_in_kind`: a family pays its fee by buying things. Write the expenses, a
+  `contribution`, and offset `reimburse_parent` rows (no money moves) for the same amount. The parent
+  is then shown as owed only the excess. Fix needed now: S26 (T0029–T0031) is missing its offsets:
+  $30.03 → T0029 and $4.97 → T0031.
+- `correct_row`: how to void a row. Set amount to `0` and start `private_notes` with `ANULADO`. The
+  dashboard now ignores such rows instead of flagging an error. T0012 needs its amount changed from
+  the text "0.0" to the number 0.
+
 ## 1.4.3 — 2026-10-14 — schema 5 (no migration)
 - `log_contribution`: when an image or PDF is attached, upload it to `Recibos/<fund_id>/` as
   `YYYY-MM-DD_<fund_id>_<txn_id>.<ext>` and set `receipt_file_id` to its Drive ID. If the upload

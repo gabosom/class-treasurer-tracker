@@ -224,8 +224,15 @@ export function parseWorkbook(raw: RawWorkbook): Workbook {
     if (!date) return err("Ledger", row, `${id}: missing or invalid date.`);
     if (!type) return err("Ledger", row, `${id}: invalid type "${str(r[3])}".`);
     if (!fundById.has(fundId)) return err("Ledger", row, `${id}: unknown fund_id "${fundId}".`);
+    // Voided row (skill correct_row): amount 0 and private_notes starting with "ANULADO". Its
+    // txn_id stays taken; the row is otherwise ignored.
+    if (amount === 0 && /^\s*\[?ANULAD[OA]/i.test(str(r[12]))) return;
     if (amount === null || Number.isNaN(amount) || amount <= 0)
-      return err("Ledger", row, `${id}: amount must be a positive number.`);
+      return err(
+        "Ledger",
+        row,
+        `${id}: amount must be a positive number. To void a row, set the amount to 0 and start private_notes with "ANULADO".`,
+      );
     const method = str(r[8]).toLowerCase();
     if (method && !(METHODS as readonly string[]).includes(method))
       warn("Ledger", row, `${id}: unknown method "${method}".`);
