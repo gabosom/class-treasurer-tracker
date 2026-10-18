@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { isDemo } from "@/lib/data";
+import { TIME_ZONE } from "@/lib/money";
 import type { Dict, Lang } from "@/lib/i18n";
 import { LanguageSelect, RefreshButton } from "./client";
 
@@ -20,7 +21,7 @@ export function Header({
     ? new Date(fetchedAt).toLocaleString(lang === "es" ? "es-US" : "en-US", {
         dateStyle: "medium",
         timeStyle: "short",
-        timeZone: "America/Los_Angeles",
+        timeZone: TIME_ZONE,
       })
     : null;
   const link = (href: string, label: string, on: boolean) => (

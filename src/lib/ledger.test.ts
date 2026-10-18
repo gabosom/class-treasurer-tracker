@@ -332,3 +332,12 @@ describe("funds without a cost", () => {
     expect(l.pots.class).toBe(2754);
   });
 });
+
+describe("Ecuador time zone", () => {
+  it("days waiting counts Ecuador calendar days, not UTC", async () => {
+    const { daysBetween } = await import("./money");
+    // 2026-10-20 21:00 in Ecuador is already 2026-10-21 in UTC.
+    expect(daysBetween("2026-10-19", new Date("2026-10-21T02:00:00Z"))).toBe(1);
+    expect(daysBetween("2026-10-19", new Date("2026-10-21T06:00:00Z"))).toBe(2);
+  });
+});

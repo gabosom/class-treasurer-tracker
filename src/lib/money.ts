@@ -44,8 +44,13 @@ function iso(y: number, mo: number, d: number): string | null {
   return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
+/** The class is in Ecuador: "today" and displayed times use this zone (UTC−5, no DST). */
+export const TIME_ZONE = "America/Guayaquil";
+
+/** Whole days from a yyyy-mm-dd date to `to`'s calendar date in Ecuador. */
 export function daysBetween(fromIso: string, to: Date): number {
   const from = Date.parse(fromIso + "T00:00:00Z");
-  const today = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
+  // en-CA formats as yyyy-mm-dd
+  const today = Date.parse(to.toLocaleDateString("en-CA", { timeZone: TIME_ZONE }) + "T00:00:00Z");
   return Math.max(0, Math.round((today - from) / 86_400_000));
 }
