@@ -5,7 +5,7 @@ description: Record class treasury money for the 2026-27 school year in the "Tes
 
 # Class Treasurer skill
 
-- **skill_version: 1.4.6**
+- **skill_version: 1.4.7**
 - **schema_version: 5**
 - Source of truth: `github.com/gabosom/class-treasurer-tracker`, file `agent/class-treasurer/SKILL.md`
   on `main`. Change history: `agent/CHANGELOG.md`. Design: `docs/DESIGN.md`.
@@ -117,8 +117,9 @@ line. When any of these columns is set, the dashboard shows a budget for the eve
 venue costs, drinks/snacks, planned total) for the families in `Participants`. **`total_cost` is
 the fixed planned total when it's filled in**: it never changes with attendance, a blank
 `drinks_snacks` shows as "the rest of the total", and the card flags it if the cost lines exceed
-it. **If `total_cost` is blank**, the planned total is calculated as venue subtotal +
-`drinks_snacks`, and it moves with attendance. It counts kids
+it. **If `total_cost` and `drinks_snacks` are both blank**, the budget is what families pay
+(revenue), and drinks/snacks get what's left after the venue. **If only `total_cost` is blank**,
+the planned total is venue subtotal + `drinks_snacks`. It counts kids
 and adults from `Participants.attendees`, so keep that note in a readable form like
 `2 adultos + 1 niño` or `2 adults, 1 kid` (siblings count as kids).
 
@@ -293,8 +294,10 @@ attending family, who's coming** (the student, siblings, adults).
    and `drinks_snacks`. Leave a column blank if it doesn't apply; never guess a price.
    - **Fixed budget** ("the outing costs $X, period"): write `total_cost`. If the rest goes to
      drinks/snacks, leave `drinks_snacks` **blank**; the dashboard shows the remainder.
-   - **Budget that follows attendance** ("venue per person plus $X of drinks"): leave `total_cost`
-     **blank** and fill in `drinks_snacks`; the dashboard calculates the total.
+   - **Families' payments are the budget** ("whatever's left after the venue goes to drinks"):
+     leave `total_cost` and `drinks_snacks` **both blank**.
+   - **Fixed drinks amount** ("venue per person plus $X of drinks"): leave `total_cost` **blank**
+     and fill in `drinks_snacks`; the dashboard calculates the total.
    - Ask the treasurer which one if it's unclear. Don't change `total_cost` when attendance
      changes unless the treasurer asks.
 4. Write one `Participants` row per **confirmed** family: `amount_due`, plus `attendees` like

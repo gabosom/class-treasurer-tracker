@@ -43,16 +43,22 @@ export interface BudgetScenario {
   revenueAdultsCents: number | null;
   /** null when both revenue columns are blank */
   revenueCents: number | null;
-  /** Funds.drinks_snacks; or, when it's blank and total_cost is set, what's left of the total after the venue */
+  /** Funds.drinks_snacks; or, when it's blank, what's left of the budget after the venue */
   drinksCents: number | null;
   drinksIsRemainder: boolean;
-  /** total_cost set: total − (venue + drinks) when positive ("sin asignar") */
+  /** budget − (venue + drinks) when positive ("sin asignar") */
   unallocatedCents: number | null;
-  /** total_cost set: how much the cost lines exceed it (0 if they don't) */
+  /** how much the cost lines exceed the budget (0 if they don't) */
   overCents: number;
-  /** Planned total: Funds.total_cost if set (fixed); otherwise venue subtotal + drinks/snacks. null when nothing is set */
+  /** Planned total: the budget, or venue subtotal + drinks/snacks when there's no budget. null when nothing is set */
   totalCostCents: number | null;
-  totalIsFixed: boolean;
+  /**
+   * Where the budget comes from (D18):
+   * - fixed: Funds.total_cost
+   * - revenue: total_cost and drinks_snacks blank → what families pay
+   * - lines: total_cost blank, drinks_snacks set → venue + drinks, no separate budget
+   */
+  budgetSource: "fixed" | "revenue" | "lines";
 }
 
 export interface EventBudget {
@@ -95,17 +101,22 @@ export function computeEventBudget(fund: Fund, participants: Participant[]): Eve
   const revenueKidsCents = times(kids, revenuePerKidCents);
   const revenueAdultsCents = times(adults, revenuePerAdultCents);
 
-  // D18: a total_cost in Funds is the fixed planned total; a blank one is calculated from the lines.
-  const fixed = fund.totalCostCents;
+  const revenueCents = sum(revenueKidsCents, revenueAdultsCents);
+
+  // D18: drinks/snacks get what's left of the budget. The budget is total_cost if set (fixed);
+  // with total_cost and drinks_snacks both blank, it's what families pay.
+  const budgetSource: BudgetScenario["budgetSource"] =
+    fund.totalCostCents !== null ? "fixed" : drinksSnacksCents === null && revenueCents !== null ? "revenue" : "lines";
+  const budget = budgetSource === "fixed" ? fund.totalCostCents : budgetSource === "revenue" ? revenueCents : null;
   let drinksCents = drinksSnacksCents;
   let drinksIsRemainder = false;
-  if (fixed !== null && drinksCents === null && venueSubtotalCents !== null && venueSubtotalCents <= fixed) {
-    drinksCents = fixed - venueSubtotalCents;
+  if (budget !== null && drinksCents === null && venueSubtotalCents !== null && venueSubtotalCents <= budget) {
+    drinksCents = budget - venueSubtotalCents;
     drinksIsRemainder = true;
   }
   const lines = sum(venueSubtotalCents, drinksCents);
-  const unallocatedCents = fixed !== null && lines !== null && lines < fixed ? fixed - lines : null;
-  const overCents = fixed !== null && lines !== null && lines > fixed ? lines - fixed : 0;
+  const unallocatedCents = budget !== null && lines !== null && lines < budget ? budget - lines : null;
+  const overCents = budget !== null && lines !== null && lines > budget ? lines - budget : 0;
 
   return {
     fundTotalCostCents: fund.totalCostCents,
@@ -123,13 +134,13 @@ export function computeEventBudget(fund: Fund, participants: Participant[]): Eve
       venueSubtotalCents,
       revenueKidsCents,
       revenueAdultsCents,
-      revenueCents: sum(revenueKidsCents, revenueAdultsCents),
+      revenueCents,
       drinksCents,
       drinksIsRemainder,
       unallocatedCents,
       overCents,
-      totalCostCents: fixed ?? lines,
-      totalIsFixed: fixed !== null,
+      totalCostCents: budget ?? lines,
+      budgetSource,
     },
     unreadableRows,
   };

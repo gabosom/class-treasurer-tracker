@@ -3,6 +3,11 @@
 Newest first. Each entry lists `skill_version` and `schema_version`. When `schema_version`
 changes, the entry includes **Migration** steps that the agent's `migrate` operation runs in order.
 
+## 1.4.7 — 2026-10-19 — schema 5 (no migration)
+- When `total_cost` and `drinks_snacks` are both blank, the budget is what families pay: drinks/snacks
+  get what's left after the venue, and the card warns if the families' payments don't cover the
+  venue. `create_event` step 3 lists the three ways to set up a budget.
+
 ## 1.4.6 — 2026-10-19 — schema 5 (no migration)
 - `Funds.total_cost` means two different things now (dashboard D18):
   - **filled in:** the fixed planned total. It never moves with attendance. A blank `drinks_snacks` =

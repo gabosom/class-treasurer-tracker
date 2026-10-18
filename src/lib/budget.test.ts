@@ -65,15 +65,17 @@ describe("computeEventBudget", () => {
     expect(c.revenueCents).toBe(36 * 1100);
     expect(c.venueFlatFeeCents).toBeNull();
     expect(c.venueSubtotalCents).toBe(36 * 1050 + 46 * 300);
+    // No total_cost or drinks: the budget is the (smaller) revenue, which doesn't cover the venue.
     expect(c.drinksCents).toBeNull();
-    expect(c.totalCostCents).toBe(c.venueSubtotalCents);
+    expect(c.totalCostCents).toBe(c.revenueCents);
+    expect(c.overCents).toBe(c.venueSubtotalCents! - c.revenueCents!);
   });
 
   // D18: total_cost set = fixed planned total; blank = calculated.
   const venue = 36 * 1050 + 46 * 300 + 3500; // $551
   it("total_cost set, drinks blank: drinks is the rest of the total", () => {
     const c = computeEventBudget({ ...fund, totalCostCents: 69950, drinksSnacksCents: null }, participants)!.confirmed;
-    expect(c).toMatchObject({ totalCostCents: 69950, totalIsFixed: true, drinksCents: 69950 - venue, drinksIsRemainder: true, unallocatedCents: null, overCents: 0 });
+    expect(c).toMatchObject({ totalCostCents: 69950, budgetSource: "fixed", drinksCents: 69950 - venue, drinksIsRemainder: true, unallocatedCents: null, overCents: 0 });
   });
 
   it("total_cost set, drinks set: the gap is unallocated, an excess is flagged; the total never moves", () => {
@@ -88,9 +90,17 @@ describe("computeEventBudget", () => {
     expect(c).toMatchObject({ totalCostCents: 50000, drinksCents: null, overCents: venue - 50000 });
   });
 
+  it("total_cost and drinks blank: the budget is what families pay; drinks get the rest", () => {
+    const c = computeEventBudget({ ...fund, totalCostCents: null, drinksSnacksCents: null }, participants)!.confirmed;
+    const revenue = 36 * 1100 + 46 * 650;
+    expect(c).toMatchObject({ budgetSource: "revenue", totalCostCents: revenue, drinksCents: revenue - venue, drinksIsRemainder: true, overCents: 0 });
+    const short = computeEventBudget({ ...fund, totalCostCents: null, drinksSnacksCents: null, revenuePerKidCents: 500 }, participants)!.confirmed;
+    expect(short).toMatchObject({ budgetSource: "revenue", drinksCents: null, overCents: venue - (36 * 500 + 46 * 650) });
+  });
+
   it("total_cost blank: planned total = venue + drinks, not fixed", () => {
     const c = computeEventBudget({ ...fund, totalCostCents: null, drinksSnacksCents: 14100 }, participants)!.confirmed;
-    expect(c).toMatchObject({ totalCostCents: venue + 14100, totalIsFixed: false, unallocatedCents: null, overCents: 0 });
+    expect(c).toMatchObject({ totalCostCents: venue + 14100, budgetSource: "lines", unallocatedCents: null, overCents: 0 });
   });
 
   it("no revenue columns: revenue total is null (no Config defaults)", () => {

@@ -70,15 +70,24 @@ export function BudgetCard({ b, t, lang }: { b: EventBudget; t: Dict; lang: Lang
               { label: T.venueAdults(price(b.venuePerAdultCents)), value: (s) => s.venueAdultsCents },
               { label: T.venueFlat, value: (s) => s.venueFlatFeeCents },
               { label: T.venueSubtotal, value: (s) => s.venueSubtotalCents, strong: true },
-              { label: c.drinksIsRemainder ? T.drinksRemainder : T.drinks, value: (s) => s.drinksCents },
+              {
+                label: !c.drinksIsRemainder ? T.drinks : c.budgetSource === "revenue" ? T.drinksFromRevenue : T.drinksRemainder,
+                value: (s) => s.drinksCents,
+              },
               { label: T.unallocated, value: (s) => s.unallocatedCents },
               // D18: a total_cost in Funds is fixed; otherwise venue subtotal + drinks/snacks.
-              { label: c.totalIsFixed ? T.totalFixed : T.totalCost, value: (s) => s.totalCostCents, strong: true },
+              {
+                label: c.budgetSource === "fixed" ? T.totalFixed : c.budgetSource === "revenue" ? T.totalFromRevenue : T.totalCost,
+                value: (s) => s.totalCostCents,
+                strong: true,
+              },
             ])}
           </tbody>
         </table>
       </div>
-      {c.overCents > 0 && <p className="mt-2 text-xs text-bad">⚠ {T.over($(c.overCents))}</p>}
+      {c.overCents > 0 && (
+        <p className="mt-2 text-xs text-bad">⚠ {(c.budgetSource === "revenue" ? T.overRevenue : T.over)($(c.overCents))}</p>
+      )}
       {b.unreadableRows > 0 && <p className="mt-2 text-xs text-ink">⚠ {T.unreadable(b.unreadableRows)}</p>}
     </div>
   );
